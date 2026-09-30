@@ -5,6 +5,7 @@ const DEFAULT_SETTINGS = {
   blockHoverPreview: true,
   blockWatchPlayback: true,
   hideShorts: true,
+  hideAds: true,
   feedDataFilter: true,
   showPageButtons: false,
   parentPassword: "varna",
@@ -47,6 +48,7 @@ const RULE_KEYS = [
   'blockHoverPreview',
   'blockWatchPlayback',
   'hideShorts',
+  'hideAds',
   'feedDataFilter',
   'showPageButtons'
 ];

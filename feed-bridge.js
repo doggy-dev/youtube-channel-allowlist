@@ -7,6 +7,7 @@
 
   let enabled = true;
   let hideShorts = true;
+  let hideAds = true;
   let failClosed = true; // drop items with no resolvable channel
   let bypassed = false;
   /** @type {{ ids: Set<string>, handles: Set<string> }} */
@@ -191,16 +192,114 @@
     return isAllowedChannel(page.channelId, page.handle);
   }
 
+  const AD_RENDERER_KEYS = [
+    'adSlotRenderer',
+    'adsEngagementPanelContentRenderer',
+    'adHoverTextButtonRenderer',
+    'displayAdRenderer',
+    'inPlayerAdLayoutRenderer',
+    'instreamVideoAdRenderer',
+    'playerLegacyDesktopWatchAdsRenderer',
+    'promotedSparklesTextSearchRenderer',
+    'promotedSparklesWebRenderer',
+    'promotedVideoRenderer',
+    'reelPlayerAdRenderer',
+    'searchPyvRenderer',
+    'statementBannerRenderer',
+    'brandVideoShelfRenderer',
+    'brandVideoSingletonRenderer',
+    'videoMasonryMetadataAdRenderer'
+  ];
+
+  function isAdNode(node) {
+    if (!node || typeof node !== 'object') return false;
+    for (const key of AD_RENDERER_KEYS) {
+      if (node[key]) return true;
+    }
+    // Nested ad inside richItem / itemSection wrappers
+    if (node.richItemRenderer && node.richItemRenderer.content) {
+      return isAdNode(node.richItemRenderer.content);
+    }
+    if (node.itemSectionRenderer && Array.isArray(node.itemSectionRenderer.contents)) {
+      // Only treat as ad section when every content child is an ad (rare) — skip here
+    }
+    // Promoted badge / "Sponsored" text in common metadata shapes
+    try {
+      const badgeLabels = [];
+      const collectBadges = (obj, depth) => {
+        if (!obj || typeof obj !== 'object' || depth > 4) return;
+        if (obj.label && typeof obj.label === 'string') badgeLabels.push(obj.label);
+        if (obj.simpleText) badgeLabels.push(obj.simpleText);
+        if (Array.isArray(obj.runs)) badgeLabels.push(obj.runs.map((r) => r.text || '').join(''));
+        for (const v of Object.values(obj)) {
+          if (v && typeof v === 'object') collectBadges(v, depth + 1);
+        }
+      };
+      if (node.promotedMetadata || node.adBadge || node.badge) {
+        collectBadges(node.promotedMetadata || node.adBadge || node.badge, 0);
+      }
+      if (badgeLabels.some((t) => /sponsored|promoted|ad\b/i.test(String(t)))) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function nodeLooksLikeShortsShelf(node) {
+    if (!node || typeof node !== 'object') return false;
+    if (node.reelShelfRenderer) return true;
+    if (node.shortsLockupViewModel) return true;
+
+    const rich = node.richShelfRenderer || (node.richSectionRenderer && node.richSectionRenderer.content && node.richSectionRenderer.content.richShelfRenderer);
+    if (rich) {
+      if (rich.isShorts || rich.shortsLockupStyle || rich.style === 'SHORTS_GRID') return true;
+      const title = textFrom(rich.title) || textFrom(rich.headerRenderer && rich.headerRenderer.shelfHeaderRenderer && rich.headerRenderer.shelfHeaderRenderer.title);
+      if (/^shorts$/i.test(String(title).trim())) return true;
+      // Shelf whose contents are predominantly shorts links
+      const contents = rich.contents || rich.items || [];
+      if (Array.isArray(contents) && contents.length > 0) {
+        let shorts = 0;
+        for (const c of contents.slice(0, 8)) {
+          const meta = extractVideoMeta(c);
+          if (meta && meta.isShorts) shorts++;
+          else if (JSON.stringify(c).includes('/shorts/')) shorts++;
+        }
+        if (shorts >= Math.ceil(Math.min(contents.length, 8) * 0.5)) return true;
+      }
+    }
+
+    // Newer grid shelf view models used on search
+    if (node.gridShelfViewModel || node.shelfViewModel) {
+      const raw = JSON.stringify(node).slice(0, 4000);
+      if (raw.includes('/shorts/') || /"Shorts"|reelShelf|shortsLockup/i.test(raw)) return true;
+    }
+
+    // itemSection that only wraps a shorts shelf
+    if (node.itemSectionRenderer && Array.isArray(node.itemSectionRenderer.contents)) {
+      const kids = node.itemSectionRenderer.contents;
+      if (kids.length > 0 && kids.every((k) => nodeLooksLikeShortsShelf(k) || (extractVideoMeta(k) && extractVideoMeta(k).isShorts))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   function shouldKeepItem(node) {
-    if (bypassed || !enabled) return true;
+    if (bypassed) return true;
+
+    // Ads / Shorts shelves apply even if channel feed-filter is off
+    if (hideAds && isAdNode(node)) return false;
+    if (hideShorts && nodeLooksLikeShortsShelf(node)) return false;
+
+    if (!enabled) return true;
 
     const meta = extractVideoMeta(node);
     if (!meta) {
-      // Not a recognized video renderer — keep (shelves, headers, continuations, etc.)
+      // Not a recognized video renderer — keep (headers, continuations, etc.)
       return true;
     }
 
     if (hideShorts && meta.isShorts) return false;
+    if (hideAds && meta.isAd) return false;
 
     if (meta.channelId || meta.handle) {
       return isAllowedChannel(meta.channelId, meta.handle);
@@ -290,7 +389,8 @@
 
   function filterPayload(data) {
     if (!data || typeof data !== 'object') return data;
-    if (bypassed || !enabled) return data;
+    if (bypassed) return data;
+    if (!enabled && !hideAds && !hideShorts) return data;
     try {
       filterTree(data);
       // Explicit paths commercial also hits (belt and suspenders)
@@ -417,6 +517,7 @@
     if (data.type === 'YT_WL_FEED_CONFIG') {
       enabled = data.enabled !== false;
       hideShorts = !!data.hideShorts;
+      hideAds = data.hideAds !== false;
       failClosed = data.failClosed !== false;
       bypassed = !!data.bypassed;
       setAllowList(data.channels || []);

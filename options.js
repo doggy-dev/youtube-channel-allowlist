@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ruleBlockHover = document.getElementById('rule-block-hover');
   const ruleBlockWatch = document.getElementById('rule-block-watch');
   const ruleHideShorts = document.getElementById('rule-hide-shorts');
+  const ruleHideAds = document.getElementById('rule-hide-ads');
   const ruleFeedDataFilter = document.getElementById('rule-feed-data-filter');
   const btnOptionsChangePass = document.getElementById('btn-options-change-pass');
 
@@ -45,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     blockHoverPreview: true,
     blockWatchPlayback: true,
     hideShorts: true,
+    hideAds: true,
     feedDataFilter: true,
     showPageButtons: false,
     parentPassword: 'varna',
@@ -65,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderTable(optSearchInput.value);
     }
     if ((changes.enabled || changes.hideNonWhitelisted || changes.blockHoverPreview ||
-         changes.blockWatchPlayback || changes.hideShorts || changes.feedDataFilter) && !optionsApp.classList.contains('hidden')) {
+         changes.blockWatchPlayback || changes.hideShorts || changes.hideAds || changes.feedDataFilter) && !optionsApp.classList.contains('hidden')) {
       syncRulesUI();
     }
   });
@@ -103,6 +105,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     ruleBlockHover.checked = !!settings.blockHoverPreview;
     ruleBlockWatch.checked = !!settings.blockWatchPlayback;
     ruleHideShorts.checked = !!settings.hideShorts;
+    if (ruleHideAds) {
+      ruleHideAds.checked = settings.hideAds !== false;
+    }
     if (ruleFeedDataFilter) {
       ruleFeedDataFilter.checked = settings.feedDataFilter !== false;
     }
@@ -146,6 +151,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   ruleHideShorts.addEventListener('change', () => {
     saveSetting('hideShorts', ruleHideShorts.checked);
   });
+  if (ruleHideAds) {
+    ruleHideAds.addEventListener('change', () => {
+      saveSetting('hideAds', ruleHideAds.checked);
+    });
+  }
   if (ruleFeedDataFilter) {
     ruleFeedDataFilter.addEventListener('change', () => {
       saveSetting('feedDataFilter', ruleFeedDataFilter.checked);
@@ -496,6 +506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         blockHoverPreview: !!settings.blockHoverPreview,
         blockWatchPlayback: !!settings.blockWatchPlayback,
         hideShorts: !!settings.hideShorts,
+        hideAds: settings.hideAds !== false,
         feedDataFilter: settings.feedDataFilter !== false,
         showPageButtons: !!settings.showPageButtons
       }
@@ -538,6 +549,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           blockHoverPreview: parsed.blockHoverPreview,
           blockWatchPlayback: parsed.blockWatchPlayback,
           hideShorts: parsed.hideShorts,
+          hideAds: parsed.hideAds,
           feedDataFilter: parsed.feedDataFilter,
           showPageButtons: parsed.showPageButtons
         };

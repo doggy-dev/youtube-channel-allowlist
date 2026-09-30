@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     blockHoverPreview: true,
     blockWatchPlayback: true,
     hideShorts: true,
+    hideAds: true,
     parentPassword: 'varna',
     bypassUntil: 0,
     whitelist: []
