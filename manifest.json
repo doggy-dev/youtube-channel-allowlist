@@ -1,14 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Smart Popup Blocker Pro",
-  "version": "2.4.1",
+  "version": "2.7.1",
   "description": "Blocks intrusive popups, overlay dialogs, and unwanted background redirects.",
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "alarms"
   ],
   "host_permissions": [
-    "*://*.youtube.com/*"
+    "*://*.youtube.com/*",
+    "*://*.youtube-nocookie.com/*",
+    "*://*.googleusercontent.com/*",
+    "*://yt3.ggpht.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -36,7 +40,21 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.youtube.com/*"
+        "*://*.youtube.com/*",
+        "*://*.youtube-nocookie.com/*"
+      ],
+      "js": [
+        "player-bridge.js",
+        "feed-bridge.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.youtube-nocookie.com/*"
       ],
       "css": [
         "content.css"
@@ -44,7 +62,8 @@
       "js": [
         "content.js"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [
@@ -53,7 +72,8 @@
         "icons/*"
       ],
       "matches": [
-        "*://*.youtube.com/*"
+        "*://*.youtube.com/*",
+        "*://*.youtube-nocookie.com/*"
       ]
     }
   ]

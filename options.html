@@ -40,7 +40,7 @@
         <img src="icons/icon48.png" alt="Logo" class="sidebar-logo">
         <div>
           <h2>Popup Blocker Pro</h2>
-          <span class="version-tag">Admin Console v2.4</span>
+          <span class="version-tag">Admin Console v2.5</span>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -117,7 +117,7 @@
         <div class="section-header">
           <div>
             <h1>Bulk Add Channels</h1>
-            <p class="section-lead">Paste multiple channel handles or URLs separated by new lines.</p>
+            <p class="section-lead">Paste handles/URLs, or upload a .txt / .csv / .json channel list.</p>
           </div>
         </div>
 
@@ -126,11 +126,24 @@
             id="bulk-textarea" 
             class="bulk-input" 
             rows="8" 
-            placeholder="@veritasium&#10;@3blue1brown&#10;https://www.youtube.com/@kurzgesagt&#10;@markrober"
+            placeholder="@veritasium&#10;@3blue1brown&#10;https://www.youtube.com/@kurzgesagt&#10;UCHnyfMqiRRG1u-2MsSQLbXA"
           ></textarea>
           <div class="bulk-footer">
-            <span class="hint-text">Each line can be a handle, URL, or Channel ID.</span>
-            <button id="btn-process-bulk" class="btn btn-primary">⚡ Import All Lines</button>
+            <span class="hint-text">One channel per line: handle, URL, or Channel ID (UC…).</span>
+            <button id="btn-process-bulk" class="btn btn-primary">⚡ Import Pasted Lines</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px;">
+          <h3 style="margin-bottom: 8px;">Upload Channel List File</h3>
+          <p class="section-lead" style="margin-bottom: 14px;">
+            Accepts <code>.txt</code> / <code>.csv</code> (one channel per line) or a <code>.json</code> array of
+            <code>{ "handle", "channelId", "name" }</code> objects / backup whitelist arrays.
+          </p>
+          <div class="bulk-footer">
+            <label for="bulk-file-input" class="btn btn-secondary">📂 Choose File</label>
+            <input type="file" id="bulk-file-input" accept=".txt,.csv,.json,text/plain,text/csv,application/json" style="display: none;">
+            <span id="bulk-file-status" class="hint-text">No file selected</span>
           </div>
         </div>
       </section>
@@ -189,11 +202,22 @@
             </label>
           </div>
 
-          <!-- Password Setting -->
           <div class="rule-row">
             <div class="rule-details">
+              <h3>Feed Data Filter (Advanced)</h3>
+              <p>Removes non-whitelisted videos from YouTube’s data before cards appear (home, search, related). Falls back to on-page hiding if needed. Disable if feeds look broken after a YouTube update.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="rule-feed-data-filter" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <!-- Password Setting -->
+          <div class="rule-row highlight-row">
+            <div class="rule-details">
               <h3>Master Password</h3>
-              <p>The password required to unlock settings and authorize channels (Current default: <code>varna</code>).</p>
+              <p>The password required to unlock settings and authorize channels.</p>
             </div>
             <button id="btn-options-change-pass" class="btn btn-secondary">
               Change Password
@@ -207,21 +231,37 @@
         <div class="section-header">
           <div>
             <h1>Backup & Restore</h1>
-            <p class="section-lead">Export and import your whitelist configuration.</p>
+            <p class="section-lead">Export and import whitelist channels and filter rules.</p>
           </div>
         </div>
 
         <div class="card grid-2">
           <div class="backup-box">
             <h3>Export Backup</h3>
-            <p>Download a JSON file containing all your whitelisted channels and active rules.</p>
+            <p>Download a JSON file with all whitelisted channels and active filter rules. Password is excluded by default.</p>
+            <label class="backup-check">
+              <input type="checkbox" id="export-include-password">
+              Include parent password in export (less safe)
+            </label>
             <button id="btn-export-backup" class="btn btn-secondary">💾 Download Backup (.json)</button>
           </div>
           <div class="backup-box">
             <h3>Restore Backup</h3>
-            <p>Upload a previously exported whitelist JSON file to restore your settings.</p>
+            <p>Upload a previously exported JSON backup. Choose merge or replace for channels; rules are always restored when present.</p>
+            <label class="backup-check">
+              <input type="radio" name="restore-mode" value="merge" checked>
+              Merge channels (keep existing + add new)
+            </label>
+            <label class="backup-check">
+              <input type="radio" name="restore-mode" value="replace">
+              Replace channels (overwrite whitelist)
+            </label>
+            <label class="backup-check">
+              <input type="checkbox" id="restore-include-password">
+              Restore password from backup (if included)
+            </label>
             <label for="restore-file-input" class="btn btn-secondary">📂 Select JSON File</label>
-            <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+            <input type="file" id="restore-file-input" accept=".json,application/json" style="display: none;">
           </div>
         </div>
       </section>

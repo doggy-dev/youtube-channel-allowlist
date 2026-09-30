@@ -5,8 +5,10 @@ const DEFAULT_SETTINGS = {
   blockHoverPreview: true,
   blockWatchPlayback: true,
   hideShorts: true,
+  feedDataFilter: true,
   showPageButtons: false,
   parentPassword: "varna",
+  bypassUntil: 0,
   whitelist: [
     {
       id: "wl_sample_1",
@@ -39,7 +41,98 @@ const DEFAULT_SETTINGS = {
   }
 };
 
-// Initialize settings on install or update
+const RULE_KEYS = [
+  'enabled',
+  'hideNonWhitelisted',
+  'blockHoverPreview',
+  'blockWatchPlayback',
+  'hideShorts',
+  'feedDataFilter',
+  'showPageButtons'
+];
+
+// Serialize whitelist mutations through one chain to avoid lost updates
+let whitelistQueue = Promise.resolve();
+
+function enqueueWhitelistOp(fn) {
+  const run = whitelistQueue.then(fn, fn);
+  whitelistQueue = run.catch(() => {});
+  return run;
+}
+
+function normHandle(h) {
+  return (h || '').toLowerCase().replace(/^@/, '').trim();
+}
+
+function channelExists(list, entry) {
+  const h = normHandle(entry.handle);
+  const id = (entry.channelId || '').trim();
+  return list.some((item) => {
+    const ih = normHandle(item.handle);
+    const iid = (item.channelId || '').trim();
+    return (h && ih && h === ih) || (id && iid && id === iid);
+  });
+}
+
+function makeEntry(itemData) {
+  return {
+    id: 'wl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    handle: itemData.handle || '',
+    name: itemData.name || itemData.handle || itemData.channelId || '',
+    channelId: itemData.channelId || '',
+    avatarUrl: itemData.avatarUrl || '',
+    addedAt: Date.now()
+  };
+}
+
+async function addChannelsAtomic(entries) {
+  return enqueueWhitelistOp(async () => {
+    const { whitelist = [] } = await chrome.storage.local.get('whitelist');
+    const list = [...whitelist];
+    let added = 0;
+
+    for (const raw of entries) {
+      if (!raw || (!raw.handle && !raw.channelId)) continue;
+      if (channelExists(list, raw)) continue;
+      list.push(makeEntry(raw));
+      added++;
+    }
+
+    await chrome.storage.local.set({ whitelist: list });
+    return { added, whitelist: list };
+  });
+}
+
+async function removeChannelAtomic(id) {
+  return enqueueWhitelistOp(async () => {
+    const { whitelist = [] } = await chrome.storage.local.get('whitelist');
+    const list = whitelist.filter((item) => item.id !== id);
+    await chrome.storage.local.set({ whitelist: list });
+    return { whitelist: list };
+  });
+}
+
+async function replaceWhitelistAtomic(entries) {
+  return enqueueWhitelistOp(async () => {
+    const list = [];
+    for (const raw of entries || []) {
+      if (!raw || (!raw.handle && !raw.channelId)) continue;
+      if (channelExists(list, raw)) continue;
+      list.push({
+        id: raw.id || makeEntry(raw).id,
+        handle: raw.handle || '',
+        name: raw.name || raw.handle || raw.channelId || '',
+        channelId: raw.channelId || '',
+        avatarUrl: raw.avatarUrl || '',
+        addedAt: raw.addedAt || Date.now()
+      });
+    }
+    await chrome.storage.local.set({ whitelist: list });
+    return { whitelist: list };
+  });
+}
+
+// Initialize settings on install or update — only fill missing keys
 chrome.runtime.onInstalled.addListener(async (details) => {
   const data = await chrome.storage.local.get(null);
   const updates = {};
@@ -50,22 +143,32 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     }
   }
 
-  updates.hideShorts = true;
-  updates.showPageButtons = false;
+  // Do not overwrite parent preferences on update
   if (!data.parentPassword) {
     updates.parentPassword = "varna";
   }
 
-  await chrome.storage.local.set(updates);
+  if (Object.keys(updates).length > 0) {
+    await chrome.storage.local.set(updates);
+  }
+
   updateBadge();
   syncMissingAvatars();
 });
 
-async function resolveChannelAvatar(handle) {
-  if (!handle) return null;
+async function resolveChannelAvatar(handleOrPath) {
+  if (!handleOrPath) return null;
   try {
-    const cleanHandle = handle.startsWith('@') ? handle : `@${handle}`;
-    const resp = await fetch(`https://www.youtube.com/${cleanHandle}`, {
+    let path = String(handleOrPath).trim();
+    if (path.startsWith('channel/')) {
+      // keep as-is
+    } else if (path.startsWith('UC') && !path.includes('/')) {
+      path = `channel/${path}`;
+    } else if (!path.startsWith('@') && !path.startsWith('channel/')) {
+      path = `@${path.replace(/^@/, '')}`;
+    }
+
+    const resp = await fetch(`https://www.youtube.com/${path}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
     });
     if (!resp.ok) return null;
@@ -80,29 +183,50 @@ async function resolveChannelAvatar(handle) {
     const mAv = html.match(/"avatar":\{"thumbnails":\[\{"url":"([^"]+)"/);
     if (mAv && mAv[1]) return mAv[1];
   } catch (e) {
-    console.warn('[Avatar Fetch Error]', handle, e);
+    console.warn('[Avatar Fetch Error]', handleOrPath, e);
   }
   return null;
 }
 
 async function syncMissingAvatars() {
-  const { whitelist = [] } = await chrome.storage.local.get('whitelist');
-  let changed = false;
+  return enqueueWhitelistOp(async () => {
+    const { whitelist = [] } = await chrome.storage.local.get('whitelist');
+    let changed = false;
 
-  for (const item of whitelist) {
-    if (!item.avatarUrl && (item.handle || item.channelId)) {
-      const url = await resolveChannelAvatar(item.handle || `channel/${item.channelId}`);
-      if (url) {
-        item.avatarUrl = url;
-        changed = true;
+    for (const item of whitelist) {
+      if (!item.avatarUrl && (item.handle || item.channelId)) {
+        const lookup = item.handle
+          ? item.handle
+          : `channel/${item.channelId}`;
+        const url = await resolveChannelAvatar(lookup);
+        if (url) {
+          item.avatarUrl = url;
+          changed = true;
+        }
       }
     }
-  }
 
-  if (changed) {
-    await chrome.storage.local.set({ whitelist });
+    if (changed) {
+      await chrome.storage.local.set({ whitelist });
+    }
+    return { changed };
+  });
+}
+
+// Clear expired bypass even when popup is closed
+async function clearExpiredBypass() {
+  const { bypassUntil = 0 } = await chrome.storage.local.get('bypassUntil');
+  if (bypassUntil && bypassUntil <= Date.now()) {
+    await chrome.storage.local.set({ bypassUntil: 0 });
   }
 }
+
+chrome.alarms?.create?.('yt-wl-bypass-tick', { periodInMinutes: 1 });
+chrome.alarms?.onAlarm?.addListener((alarm) => {
+  if (alarm.name === 'yt-wl-bypass-tick') {
+    clearExpiredBypass();
+  }
+});
 
 // Listen for messages from popup or content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -110,12 +234,63 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     resolveChannelAvatar(request.handle).then(avatarUrl => {
       sendResponse({ avatarUrl });
     });
-    return true; // Keep channel open for async response
+    return true;
   }
   if (request.action === 'syncAvatars') {
     syncMissingAvatars().then(() => {
       sendResponse({ done: true });
     });
+    return true;
+  }
+  if (request.action === 'whitelistAdd') {
+    const entries = Array.isArray(request.entries) ? request.entries : [request.entry];
+    addChannelsAtomic(entries.filter(Boolean)).then((result) => {
+      syncMissingAvatars();
+      sendResponse(result);
+    });
+    return true;
+  }
+  if (request.action === 'whitelistRemove') {
+    removeChannelAtomic(request.id).then(sendResponse);
+    return true;
+  }
+  if (request.action === 'whitelistReplace') {
+    replaceWhitelistAtomic(request.whitelist || []).then((result) => {
+      syncMissingAvatars();
+      sendResponse(result);
+    });
+    return true;
+  }
+  if (request.action === 'whitelistMerge') {
+    addChannelsAtomic(request.entries || []).then((result) => {
+      syncMissingAvatars();
+      sendResponse(result);
+    });
+    return true;
+  }
+  if (request.action === 'applyBackup') {
+    (async () => {
+      const updates = {};
+      if (Array.isArray(request.whitelist)) {
+        const replaced = await replaceWhitelistAtomic(request.whitelist);
+        updates.whitelist = replaced.whitelist;
+      }
+      if (request.rules && typeof request.rules === 'object') {
+        for (const key of RULE_KEYS) {
+          if (request.rules[key] !== undefined) {
+            updates[key] = request.rules[key];
+          }
+        }
+      }
+      if (request.includePassword && request.parentPassword) {
+        updates.parentPassword = String(request.parentPassword);
+      }
+      if (Object.keys(updates).length > 0) {
+        await chrome.storage.local.set(updates);
+      }
+      syncMissingAvatars();
+      sendResponse({ ok: true, updates });
+    })();
     return true;
   }
 });
@@ -130,7 +305,7 @@ async function updateBadge() {
 
   const count = whitelist.length;
   chrome.action.setBadgeText({ text: count > 0 ? String(count) : "" });
-  chrome.action.setBadgeBackgroundColor({ color: "#2563eb" }); // Blue badge matching popup blocker
+  chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
 }
 
 chrome.storage.onChanged.addListener((changes) => {
@@ -141,4 +316,5 @@ chrome.storage.onChanged.addListener((changes) => {
 
 // Update badge on startup and sync avatars
 updateBadge();
+clearExpiredBypass();
 syncMissingAvatars();

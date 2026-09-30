@@ -23,15 +23,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const bulkTextarea = document.getElementById('bulk-textarea');
   const btnProcessBulk = document.getElementById('btn-process-bulk');
+  const bulkFileInput = document.getElementById('bulk-file-input');
+  const bulkFileStatus = document.getElementById('bulk-file-status');
 
   const ruleHideNonWl = document.getElementById('rule-hide-non-wl');
   const ruleBlockHover = document.getElementById('rule-block-hover');
   const ruleBlockWatch = document.getElementById('rule-block-watch');
   const ruleHideShorts = document.getElementById('rule-hide-shorts');
+  const ruleFeedDataFilter = document.getElementById('rule-feed-data-filter');
   const btnOptionsChangePass = document.getElementById('btn-options-change-pass');
 
   const btnExportBackup = document.getElementById('btn-export-backup');
   const restoreFileInput = document.getElementById('restore-file-input');
+  const exportIncludePassword = document.getElementById('export-include-password');
+  const restoreIncludePassword = document.getElementById('restore-include-password');
 
   // State
   let settings = {
@@ -40,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     blockHoverPreview: true,
     blockWatchPlayback: true,
     hideShorts: true,
+    feedDataFilter: true,
     showPageButtons: false,
     parentPassword: 'varna',
     whitelist: []
@@ -50,6 +56,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (stored) {
     settings = { ...settings, ...stored };
   }
+
+  chrome.storage.onChanged.addListener((changes) => {
+    for (const [key, change] of Object.entries(changes)) {
+      settings[key] = change.newValue;
+    }
+    if (changes.whitelist && !optionsApp.classList.contains('hidden')) {
+      renderTable(optSearchInput.value);
+    }
+    if ((changes.enabled || changes.hideNonWhitelisted || changes.blockHoverPreview ||
+         changes.blockWatchPlayback || changes.hideShorts || changes.feedDataFilter) && !optionsApp.classList.contains('hidden')) {
+      syncRulesUI();
+    }
+  });
 
   // 1. Password Verification
   lockForm.addEventListener('submit', (e) => {
@@ -79,8 +98,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     passInput.focus();
   });
 
+  function syncRulesUI() {
+    ruleHideNonWl.checked = !!settings.hideNonWhitelisted;
+    ruleBlockHover.checked = !!settings.blockHoverPreview;
+    ruleBlockWatch.checked = !!settings.blockWatchPlayback;
+    ruleHideShorts.checked = !!settings.hideShorts;
+    if (ruleFeedDataFilter) {
+      ruleFeedDataFilter.checked = settings.feedDataFilter !== false;
+    }
+
+    if (settings.enabled) {
+      shieldStatusBadge.textContent = '● Shield Active';
+      shieldStatusBadge.style.color = '#22c55e';
+    } else {
+      shieldStatusBadge.textContent = '○ Shield Disabled';
+      shieldStatusBadge.style.color = '#a1a1aa';
+    }
+  }
+
   function initDashboard() {
-    // Nav handlers
     navItems.forEach(item => {
       item.onclick = (e) => {
         e.preventDefault();
@@ -93,20 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
     });
 
-    // Update Settings UI
-    ruleHideNonWl.checked = !!settings.hideNonWhitelisted;
-    ruleBlockHover.checked = !!settings.blockHoverPreview;
-    ruleBlockWatch.checked = !!settings.blockWatchPlayback;
-    ruleHideShorts.checked = !!settings.hideShorts;
-
-    if (settings.enabled) {
-      shieldStatusBadge.textContent = '● Shield Active';
-      shieldStatusBadge.style.color = '#22c55e';
-    } else {
-      shieldStatusBadge.textContent = '○ Shield Disabled';
-      shieldStatusBadge.style.color = '#a1a1aa';
-    }
-
+    syncRulesUI();
     renderTable();
   }
 
@@ -123,6 +146,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   ruleHideShorts.addEventListener('change', () => {
     saveSetting('hideShorts', ruleHideShorts.checked);
   });
+  if (ruleFeedDataFilter) {
+    ruleFeedDataFilter.addEventListener('change', () => {
+      saveSetting('feedDataFilter', ruleFeedDataFilter.checked);
+    });
+  }
 
   async function saveSetting(key, val) {
     settings[key] = val;
@@ -181,37 +209,69 @@ document.addEventListener('DOMContentLoaded', async () => {
       const tr = document.createElement('tr');
       const initial = (item.name || item.handle || '?').replace(/^@/, '').charAt(0).toUpperCase();
       const dateStr = item.addedAt ? new Date(item.addedAt).toLocaleDateString() : 'Initial';
+      const identifier = [item.handle, item.channelId].filter(Boolean).join(' · ') || '--';
 
-      tr.innerHTML = `
-        <td>
-          <div class="channel-cell">
-            <div class="table-avatar">${escapeHtml(initial)}</div>
-            <div>
-              <div class="channel-title">${escapeHtml(item.name || item.handle)}</div>
-            </div>
-          </div>
-        </td>
-        <td>
-          <code style="background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; font-size: 12px;">
-            ${escapeHtml(item.handle || item.channelId || '--')}
-          </code>
-        </td>
-        <td style="color: var(--text-muted); font-size: 12px;">
-          ${escapeHtml(dateStr)}
-        </td>
-        <td style="text-align: right;">
-          <button class="btn-icon-danger" title="Remove channel" data-id="${item.id}">
-            🗑️
-          </button>
-        </td>
-      `;
+      const cell = document.createElement('td');
+      const channelCell = document.createElement('div');
+      channelCell.className = 'channel-cell';
 
-      tr.querySelector('.btn-icon-danger').addEventListener('click', () => {
-        removeChannel(item.id);
-      });
+      if (item.avatarUrl) {
+        const img = document.createElement('img');
+        img.className = 'table-avatar-img';
+        img.src = item.avatarUrl;
+        img.alt = '';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = () => {
+          const fb = document.createElement('div');
+          fb.className = 'table-avatar';
+          fb.textContent = initial;
+          img.replaceWith(fb);
+        };
+        channelCell.appendChild(img);
+      } else {
+        const fb = document.createElement('div');
+        fb.className = 'table-avatar';
+        fb.textContent = initial;
+        channelCell.appendChild(fb);
+      }
+
+      const titleWrap = document.createElement('div');
+      const title = document.createElement('div');
+      title.className = 'channel-title';
+      title.textContent = item.name || item.handle || '';
+      titleWrap.appendChild(title);
+      channelCell.appendChild(titleWrap);
+      cell.appendChild(channelCell);
+
+      tr.appendChild(cell);
+
+      const idTd = document.createElement('td');
+      idTd.innerHTML = `<code style="background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; font-size: 12px;">${escapeHtml(identifier)}</code>`;
+      tr.appendChild(idTd);
+
+      const dateTd = document.createElement('td');
+      dateTd.style.color = 'var(--text-muted)';
+      dateTd.style.fontSize = '12px';
+      dateTd.textContent = dateStr;
+      tr.appendChild(dateTd);
+
+      const actionTd = document.createElement('td');
+      actionTd.style.textAlign = 'right';
+      const btn = document.createElement('button');
+      btn.className = 'btn-icon-danger';
+      btn.title = 'Remove channel';
+      btn.textContent = '🗑️';
+      btn.addEventListener('click', () => removeChannel(item.id));
+      actionTd.appendChild(btn);
+      tr.appendChild(actionTd);
 
       tableBody.appendChild(tr);
     });
+
+    // Backfill missing avatars
+    if (list.some((ch) => !ch.avatarUrl && (ch.handle || ch.channelId))) {
+      chrome.runtime.sendMessage({ action: 'syncAvatars' }).catch(() => {});
+    }
   }
 
   optSearchInput.addEventListener('input', () => {
@@ -225,37 +285,127 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!raw) return;
 
     const parsed = parseInput(raw);
-    if (!parsed) return;
+    if (!parsed || (!parsed.handle && !parsed.channelId)) {
+      alert('Could not recognize a channel handle, URL, or Channel ID.');
+      return;
+    }
 
-    await addChannel(parsed);
+    await addChannels([parsed]);
     optChannelInput.value = '';
     renderTable(optSearchInput.value);
   });
 
-  // Bulk Add
+  // Bulk Add (pasted lines)
   btnProcessBulk.addEventListener('click', async () => {
     const text = bulkTextarea.value.trim();
     if (!text) return;
 
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    let addedCount = 0;
-
-    for (const line of lines) {
-      const parsed = parseInput(line);
-      if (parsed) {
-        const success = await addChannel(parsed, false);
-        if (success) addedCount++;
-      }
+    const entries = parseBulkText(text);
+    if (entries.length === 0) {
+      alert('No valid channels found in the pasted text.');
+      return;
     }
 
-    await chrome.storage.local.set({ whitelist: settings.whitelist });
-    renderTable(optSearchInput.value);
+    const result = await addChannels(entries);
     bulkTextarea.value = '';
-    alert(`Successfully added ${addedCount} new channels to whitelist!`);
+    renderTable(optSearchInput.value);
+    alert(`Added ${result.added} new channel(s). Skipped ${entries.length - result.added} duplicate/invalid.`);
   });
 
+  // Bulk file upload
+  bulkFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    bulkFileStatus.textContent = `Reading ${file.name}…`;
+
+    try {
+      const text = await file.text();
+      let entries = [];
+
+      if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
+        entries = parseBulkJson(text);
+      } else {
+        entries = parseBulkText(text);
+      }
+
+      if (entries.length === 0) {
+        bulkFileStatus.textContent = 'No valid channels found in file.';
+        alert('No valid channels found in that file.');
+        e.target.value = '';
+        return;
+      }
+
+      const result = await addChannels(entries);
+      bulkFileStatus.textContent = `Imported ${result.added} from ${file.name}`;
+      renderTable(optSearchInput.value);
+      alert(`File import complete: added ${result.added} new channel(s) from ${entries.length} parsed.`);
+    } catch (err) {
+      bulkFileStatus.textContent = 'Import failed.';
+      alert('Failed to read or parse the file.');
+    }
+
+    e.target.value = '';
+  });
+
+  function parseBulkText(text) {
+    const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
+    const entries = [];
+    for (const line of lines) {
+      // CSV: take first column if comma-separated
+      const firstCol = line.split(',')[0].trim().replace(/^"|"$/g, '');
+      const parsed = parseInput(firstCol);
+      if (parsed && (parsed.handle || parsed.channelId)) {
+        entries.push(parsed);
+      }
+    }
+    return entries;
+  }
+
+  function parseBulkJson(text) {
+    const parsed = JSON.parse(text);
+    let list = [];
+
+    if (Array.isArray(parsed)) {
+      list = parsed;
+    } else if (parsed && Array.isArray(parsed.whitelist)) {
+      list = parsed.whitelist;
+    } else if (parsed && Array.isArray(parsed.channels)) {
+      list = parsed.channels;
+    } else {
+      return [];
+    }
+
+    const entries = [];
+    for (const item of list) {
+      if (typeof item === 'string') {
+        const p = parseInput(item);
+        if (p && (p.handle || p.channelId)) entries.push(p);
+        continue;
+      }
+      if (!item || typeof item !== 'object') continue;
+
+      if (item.handle || item.channelId) {
+        entries.push({
+          handle: item.handle || '',
+          channelId: item.channelId || '',
+          name: item.name || item.handle || item.channelId || ''
+        });
+        continue;
+      }
+
+      if (item.url) {
+        const p = parseInput(item.url);
+        if (p && (p.handle || p.channelId)) {
+          entries.push({ ...p, name: item.name || p.name });
+        }
+      }
+    }
+    return entries;
+  }
+
   function parseInput(raw) {
-    let input = raw.trim();
+    let input = (raw || '').trim();
     if (!input) return null;
 
     let handle = null;
@@ -279,67 +429,86 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (customMatch) {
               handle = `@${customMatch[2]}`;
               name = customMatch[2];
+            } else {
+              const reserved = new Set([
+                'watch', 'shorts', 'feed', 'results', 'playlist', 'playlists', 'channel', 'c', 'user',
+                'gaming', 'music', 'podcasts', 'sports', 'premium', 'account', 'reporthistory',
+                'creators', 'creator', 'live', 'embed', 'hashtag', 'kids', 'about', 'ads', 't', 'new'
+              ]);
+              const parts = url.pathname.split('/').filter(Boolean);
+              const root = parts[0];
+              if (root && !reserved.has(root.toLowerCase()) && /^[A-Za-z0-9_-]{2,100}$/.test(root)) {
+                handle = `@${root}`;
+                name = root;
+              }
             }
           }
         }
       } catch (e) {}
+
+      if (!handle && !channelId) return null;
     }
 
     if (!handle && !channelId) {
-      if (input.startsWith('UC') && input.length >= 20) {
+      if (input.startsWith('UC') && input.length >= 20 && !/\s/.test(input)) {
         channelId = input;
         name = input;
-      } else {
+      } else if (/^@[a-zA-Z0-9_.-]+$/.test(input) || /^[a-zA-Z0-9_.-]+$/.test(input)) {
+        if (input.includes('://') || input.includes('/')) return null;
         handle = input.startsWith('@') ? input : `@${input}`;
         name = input.replace(/^@/, '');
+      } else {
+        return null;
       }
     }
 
     return { handle, channelId, name };
   }
 
-  async function addChannel(itemData, autoSave = true) {
-    const list = settings.whitelist || [];
-    const normHandle = (itemData.handle || '').toLowerCase().replace(/^@/, '');
-    const normId = (itemData.channelId || '');
-
-    const exists = list.some(item => {
-      const iHandle = (item.handle || '').toLowerCase().replace(/^@/, '');
-      const iId = (item.channelId || '');
-      if (normHandle && iHandle && normHandle === iHandle) return true;
-      if (normId && iId && normId === iId) return true;
-      return false;
+  async function addChannels(entries) {
+    const result = await chrome.runtime.sendMessage({
+      action: 'whitelistAdd',
+      entries
     });
-
-    if (exists) return false;
-
-    const newEntry = {
-      id: 'wl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-      handle: itemData.handle || '',
-      name: itemData.name || itemData.handle || itemData.channelId,
-      channelId: itemData.channelId || '',
-      addedAt: Date.now()
-    };
-
-    settings.whitelist = [...list, newEntry];
-    if (autoSave) {
-      await chrome.storage.local.set({ whitelist: settings.whitelist });
+    if (result?.whitelist) {
+      settings.whitelist = result.whitelist;
     }
-    return true;
+    return { added: result?.added || 0, whitelist: settings.whitelist };
   }
 
   async function removeChannel(id) {
-    settings.whitelist = (settings.whitelist || []).filter(item => item.id !== id);
-    await chrome.storage.local.set({ whitelist: settings.whitelist });
+    const result = await chrome.runtime.sendMessage({ action: 'whitelistRemove', id });
+    if (result?.whitelist) {
+      settings.whitelist = result.whitelist;
+    }
     renderTable(optSearchInput.value);
   }
 
   // Backup & Restore
   btnExportBackup.addEventListener('click', () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings, null, 2));
+    const backup = {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      whitelist: settings.whitelist || [],
+      rules: {
+        enabled: !!settings.enabled,
+        hideNonWhitelisted: !!settings.hideNonWhitelisted,
+        blockHoverPreview: !!settings.blockHoverPreview,
+        blockWatchPlayback: !!settings.blockWatchPlayback,
+        hideShorts: !!settings.hideShorts,
+        feedDataFilter: settings.feedDataFilter !== false,
+        showPageButtons: !!settings.showPageButtons
+      }
+    };
+
+    if (exportIncludePassword.checked) {
+      backup.parentPassword = settings.parentPassword || '';
+    }
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `youtube_whitelist_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `youtube_whitelist_backup_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -353,39 +522,63 @@ document.addEventListener('DOMContentLoaded', async () => {
     reader.onload = async (evt) => {
       try {
         const parsed = JSON.parse(evt.target.result);
-        if (parsed.whitelist && Array.isArray(parsed.whitelist)) {
-          if (confirm(`Restore ${parsed.whitelist.length} channels from backup? This will merge with current list.`)) {
-            const current = settings.whitelist || [];
-            const merged = [...current];
+        const list = Array.isArray(parsed.whitelist)
+          ? parsed.whitelist
+          : (Array.isArray(parsed) ? parsed : null);
 
-            for (const item of parsed.whitelist) {
-              const h = (item.handle || '').toLowerCase().replace(/^@/, '');
-              const id = item.channelId || '';
-              const exists = merged.some(m => {
-                const mh = (m.handle || '').toLowerCase().replace(/^@/, '');
-                const mid = m.channelId || '';
-                return (h && mh === h) || (id && mid === id);
-              });
-
-              if (!exists) {
-                merged.push({
-                  id: 'wl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                  handle: item.handle || '',
-                  name: item.name || item.handle || item.channelId,
-                  channelId: item.channelId || '',
-                  addedAt: Date.now()
-                });
-              }
-            }
-
-            settings.whitelist = merged;
-            await chrome.storage.local.set({ whitelist: merged });
-            renderTable();
-            alert('Backup restored successfully!');
-          }
-        } else {
+        if (!list) {
           alert('Invalid backup JSON format.');
+          return;
         }
+
+        const mode = document.querySelector('input[name="restore-mode"]:checked')?.value || 'merge';
+        const rules = parsed.rules || {
+          enabled: parsed.enabled,
+          hideNonWhitelisted: parsed.hideNonWhitelisted,
+          blockHoverPreview: parsed.blockHoverPreview,
+          blockWatchPlayback: parsed.blockWatchPlayback,
+          hideShorts: parsed.hideShorts,
+          feedDataFilter: parsed.feedDataFilter,
+          showPageButtons: parsed.showPageButtons
+        };
+
+        const hasRules = rules && Object.values(rules).some(v => v !== undefined);
+        const includePass = restoreIncludePassword.checked && !!parsed.parentPassword;
+
+        const confirmMsg = mode === 'replace'
+          ? `Replace whitelist with ${list.length} channel(s) from backup${hasRules ? ' and restore filter rules' : ''}?`
+          : `Merge ${list.length} channel(s) from backup${hasRules ? ' and restore filter rules' : ''}?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        if (mode === 'replace') {
+          await chrome.runtime.sendMessage({
+            action: 'applyBackup',
+            whitelist: list,
+            rules: hasRules ? rules : null,
+            includePassword: includePass,
+            parentPassword: parsed.parentPassword
+          });
+        } else {
+          await chrome.runtime.sendMessage({
+            action: 'whitelistMerge',
+            entries: list
+          });
+          if (hasRules || includePass) {
+            await chrome.runtime.sendMessage({
+              action: 'applyBackup',
+              rules: hasRules ? rules : null,
+              includePassword: includePass,
+              parentPassword: parsed.parentPassword
+            });
+          }
+        }
+
+        const fresh = await chrome.storage.local.get(null);
+        settings = { ...settings, ...fresh };
+        syncRulesUI();
+        renderTable();
+        alert('Backup restored successfully!');
       } catch (err) {
         alert('Failed to parse backup JSON file.');
       }

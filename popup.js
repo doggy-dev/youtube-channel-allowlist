@@ -40,7 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Admin footer
   const btnChangePass = document.getElementById('btn-change-pass');
-  const btnLoadStem = document.getElementById('btn-load-stem');
+  const btnImportChannels = document.getElementById('btn-import-channels');
+  const btnBackupChannels = document.getElementById('btn-backup-channels');
+  const importChannelsFile = document.getElementById('import-channels-file');
 
   // State
   let settings = {
@@ -62,6 +64,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (stored) {
     settings = { ...settings, ...stored };
   }
+
+  chrome.storage.onChanged.addListener((changes) => {
+    for (const [key, change] of Object.entries(changes)) {
+      settings[key] = change.newValue;
+    }
+    if (changes.whitelist && !adminPanel.classList.contains('hidden')) {
+      renderWhitelist();
+    }
+    if (changes.bypassUntil && !adminPanel.classList.contains('hidden')) {
+      updateBypassUI();
+    }
+  });
 
   // ================= 1. DECOY LOGIC =================
   decoyToggle.addEventListener('change', () => {
@@ -196,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function fallbackTabCheck(tabUrl) {
-    const parsed = parseChannelInput(tabUrl);
+    const parsed = parseChannelInput(tabUrl, { strictUrl: true });
     if (parsed && (parsed.handle || parsed.channelId)) {
       displayDetectedChannel(parsed);
     } else {
@@ -205,7 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function displayDetectedChannel(channel) {
-    if (!channel || (!channel.handle && !channel.channelId && !channel.name)) {
+    if (!channel || (!channel.handle && !channel.channelId)) {
       adminCurrentCard.classList.add('hidden');
       return;
     }
@@ -268,25 +282,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     list.forEach(item => {
       const itemEl = document.createElement('div');
       itemEl.className = 'admin-wl-item';
-      itemEl.innerHTML = `
-        <div class="wl-item-info">
-          <span class="wl-name">${escapeHtml(item.name || item.handle)}</span>
-          <span class="wl-handle">${escapeHtml(item.handle || item.channelId || '')}</span>
-        </div>
-        <button class="btn-delete-item" title="Remove" data-id="${item.id}">🗑️</button>
-      `;
 
-      itemEl.querySelector('.btn-delete-item').addEventListener('click', async () => {
-        settings.whitelist = settings.whitelist.filter(w => w.id !== item.id);
-        await chrome.storage.local.set({ whitelist: settings.whitelist });
+      const info = document.createElement('div');
+      info.className = 'wl-item-info-row';
+
+      const initial = (item.name || item.handle || '?').replace(/^@/, '').charAt(0).toUpperCase();
+      if (item.avatarUrl) {
+        const img = document.createElement('img');
+        img.className = 'wl-avatar-img';
+        img.src = item.avatarUrl;
+        img.alt = '';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = () => {
+          const fb = document.createElement('div');
+          fb.className = 'wl-avatar-fallback';
+          fb.textContent = initial;
+          img.replaceWith(fb);
+        };
+        info.appendChild(img);
+      } else {
+        const fb = document.createElement('div');
+        fb.className = 'wl-avatar-fallback';
+        fb.textContent = initial;
+        info.appendChild(fb);
+      }
+
+      const text = document.createElement('div');
+      text.className = 'wl-item-info';
+      text.innerHTML = `
+        <span class="wl-name">${escapeHtml(item.name || item.handle)}</span>
+        <span class="wl-handle">${escapeHtml(item.handle || item.channelId || '')}</span>
+      `;
+      info.appendChild(text);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-delete-item';
+      delBtn.title = 'Remove';
+      delBtn.textContent = '🗑️';
+      delBtn.addEventListener('click', async () => {
+        const result = await chrome.runtime.sendMessage({ action: 'whitelistRemove', id: item.id });
+        if (result?.whitelist) {
+          settings.whitelist = result.whitelist;
+        }
         renderWhitelist();
         updateDetectedButtonState();
       });
 
+      itemEl.appendChild(info);
+      itemEl.appendChild(delBtn);
       adminWlList.appendChild(itemEl);
     });
 
     updateDetectedButtonState();
+
+    if (list.some((ch) => !ch.avatarUrl && (ch.handle || ch.channelId))) {
+      chrome.runtime.sendMessage({ action: 'syncAvatars' }).catch(() => {});
+    }
   }
 
   // Add channel handler
@@ -296,43 +347,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!raw) return;
 
     const parsed = parseChannelInput(raw);
-    if (!parsed) return;
+    if (!parsed || (!parsed.handle && !parsed.channelId)) {
+      alert('Could not recognize a channel handle, URL, or Channel ID.');
+      return;
+    }
 
     await addChannel(parsed);
     adminChannelInput.value = '';
   });
 
   async function addChannel(channelData) {
-    const list = settings.whitelist || [];
-    const normHandle = (channelData.handle || '').toLowerCase().replace(/^@/, '');
-    const normId = (channelData.channelId || '');
+    if (!channelData || (!channelData.handle && !channelData.channelId)) {
+      alert('No valid channel to add.');
+      return;
+    }
 
-    const exists = list.some(item => {
-      const iHandle = (item.handle || '').toLowerCase().replace(/^@/, '');
-      const iId = (item.channelId || '');
-      return (normHandle && iHandle === normHandle) || (normId && iId === normId);
-    });
-
-    if (exists) {
+    if (isChannelWhitelisted(channelData)) {
       alert(`${channelData.name || channelData.handle} is already in the whitelist.`);
       return;
     }
 
-    const newEntry = {
-      id: 'wl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-      handle: channelData.handle || '',
-      name: channelData.name || channelData.handle || channelData.channelId,
-      channelId: channelData.channelId || '',
-      addedAt: Date.now()
-    };
+    const result = await chrome.runtime.sendMessage({
+      action: 'whitelistAdd',
+      entry: {
+        handle: channelData.handle || '',
+        name: channelData.name || channelData.handle || channelData.channelId,
+        channelId: channelData.channelId || ''
+      }
+    });
 
-    settings.whitelist = [...list, newEntry];
-    await chrome.storage.local.set({ whitelist: settings.whitelist });
+    if (result?.whitelist) {
+      settings.whitelist = result.whitelist;
+    }
     renderWhitelist();
   }
 
-  function parseChannelInput(raw) {
-    let input = raw.trim();
+  function parseChannelInput(raw, opts = {}) {
+    let input = (raw || '').trim();
     if (!input) return null;
 
     let handle = null;
@@ -351,18 +402,48 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (idMatch) {
             channelId = idMatch[1];
             name = channelId;
+          } else {
+            const customMatch = url.pathname.match(/^\/(c|user)\/([a-zA-Z0-9_.-]+)/);
+            if (customMatch) {
+              handle = `@${customMatch[2]}`;
+              name = customMatch[2];
+            } else {
+              // Vanity custom URL: /TheRoyalInstitution[/videos]
+              const reserved = new Set([
+                'watch', 'shorts', 'feed', 'results', 'playlist', 'playlists', 'channel', 'c', 'user',
+                'gaming', 'music', 'podcasts', 'sports', 'premium', 'account', 'reporthistory',
+                'creators', 'creator', 'live', 'embed', 'hashtag', 'kids', 'about', 'ads', 't', 'new'
+              ]);
+              const parts = url.pathname.split('/').filter(Boolean);
+              const root = parts[0];
+              if (root && !reserved.has(root.toLowerCase()) && /^[A-Za-z0-9_-]{2,100}$/.test(root)) {
+                handle = `@${root}`;
+                name = root;
+              }
+            }
           }
         }
       } catch (e) {}
+
+      // Strict URL mode (tab fallback): never invent a handle from homepage / watch URLs
+      if (opts.strictUrl && !handle && !channelId) {
+        return null;
+      }
     }
 
     if (!handle && !channelId) {
-      if (input.startsWith('UC') && input.length >= 20) {
+      if (opts.strictUrl) return null;
+
+      if (input.startsWith('UC') && input.length >= 20 && !/\s/.test(input)) {
         channelId = input;
         name = input;
-      } else {
+      } else if (/^@[a-zA-Z0-9_.-]+$/.test(input) || /^[a-zA-Z0-9_.-]+$/.test(input)) {
+        // Reject obvious non-handles (URLs mistaken for handles)
+        if (input.includes('://') || input.includes('/')) return null;
         handle = input.startsWith('@') ? input : `@${input}`;
         name = input.replace(/^@/, '');
+      } else {
+        return null;
       }
     }
 
@@ -388,35 +469,98 @@ document.addEventListener('DOMContentLoaded', async () => {
     alert('Password updated successfully!');
   });
 
-  // Load STEM Preset
-  const STEM_PRESETS = [
-    { handle: '@veritasium', name: 'Veritasium', channelId: 'UCHnyfMqiRRG1u-2MsSQLbXA' },
-    { handle: '@3blue1brown', name: '3Blue1Brown', channelId: 'UCYO_jab_esuFRV4b17AJtAw' },
-    { handle: '@kurzgesagt', name: 'Kurzgesagt – In a Nutshell', channelId: 'UCsXVk37bltHxD1rDPwtNM8Q' },
-    { handle: '@smartereveryday', name: 'Smarter Every Day', channelId: 'UC6107grRI4m032EDlSrVnQw' },
-    { handle: '@markrober', name: 'Mark Rober', channelId: 'UCY1kMZp36IQSyNx_9h4mpCg' }
-  ];
+  // Backup Channels (whitelist only — no password)
+  btnBackupChannels.addEventListener('click', () => {
+    const backup = {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      whitelist: settings.whitelist || []
+    };
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = `youtube_channels_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
 
-  btnLoadStem.addEventListener('click', async () => {
-    if (!confirm('Load curated educational STEM channels into whitelist?')) return;
-    const existing = settings.whitelist || [];
-    const merged = [...existing];
+  // Import Channels
+  btnImportChannels.addEventListener('click', () => {
+    importChannelsFile.click();
+  });
 
-    for (const item of STEM_PRESETS) {
-      const h = item.handle.toLowerCase().replace(/^@/, '');
-      if (!merged.some(m => (m.handle || '').toLowerCase().replace(/^@/, '') === h)) {
-        merged.push({
-          id: 'wl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-          ...item,
-          addedAt: Date.now()
-        });
+  importChannelsFile.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      let entries = [];
+
+      if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
+        const parsed = JSON.parse(text);
+        const list = Array.isArray(parsed)
+          ? parsed
+          : (Array.isArray(parsed.whitelist) ? parsed.whitelist : (Array.isArray(parsed.channels) ? parsed.channels : null));
+
+        if (!list) {
+          alert('Invalid JSON. Expected a channel array or { "whitelist": [...] }.');
+          e.target.value = '';
+          return;
+        }
+
+        for (const item of list) {
+          if (typeof item === 'string') {
+            const p = parseChannelInput(item);
+            if (p && (p.handle || p.channelId)) entries.push(p);
+          } else if (item && (item.handle || item.channelId)) {
+            entries.push({
+              handle: item.handle || '',
+              channelId: item.channelId || '',
+              name: item.name || item.handle || item.channelId || ''
+            });
+          } else if (item?.url) {
+            const p = parseChannelInput(item.url);
+            if (p && (p.handle || p.channelId)) {
+              entries.push({ ...p, name: item.name || p.name });
+            }
+          }
+        }
+      } else {
+        const lines = text.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
+        for (const line of lines) {
+          const firstCol = line.split(',')[0].trim().replace(/^"|"$/g, '');
+          const p = parseChannelInput(firstCol);
+          if (p && (p.handle || p.channelId)) entries.push(p);
+        }
       }
+
+      if (entries.length === 0) {
+        alert('No valid channels found in that file.');
+        e.target.value = '';
+        return;
+      }
+
+      if (!confirm(`Import ${entries.length} channel(s)? Duplicates will be skipped.`)) {
+        e.target.value = '';
+        return;
+      }
+
+      const result = await chrome.runtime.sendMessage({
+        action: 'whitelistMerge',
+        entries
+      });
+      if (result?.whitelist) {
+        settings.whitelist = result.whitelist;
+      }
+      renderWhitelist();
+      alert(`Imported ${result?.added || 0} new channel(s).`);
+    } catch (err) {
+      alert('Failed to read or parse the file.');
     }
 
-    settings.whitelist = merged;
-    await chrome.storage.local.set({ whitelist: merged });
-    renderWhitelist();
-    alert('STEM pack added!');
+    e.target.value = '';
   });
 
   function escapeHtml(str) {

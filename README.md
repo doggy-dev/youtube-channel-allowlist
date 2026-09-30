@@ -1,82 +1,100 @@
-# YouTube Channel Allowlist
+# 🛡️ Smart Popup Blocker Pro (Stealth Parental Control)
 
-A Manifest V3 extension for Brave and Chromium-based browsers that lets a parent maintain a YouTube channel allowlist and apply browser-side filtering to YouTube pages.
+A stealth extension designed to look and behave like a standard **Popup Blocker** in Brave, while silently enforcing a strict YouTube channel whitelist, blocking Shorts, and preventing children from discovering or tampering with the filter.
 
-> **Scope:** This is a browser extension, not a tamper-proof parental-control boundary. Use supervised accounts and browser/device controls as well if a child can manage the browser or its extensions.
+---
 
-## Screenshots
+## 🎭 The Disguise & Decoy Interface
 
-### Toolbar popup
+- **Extension Name**: `Smart Popup Blocker Pro`
+- **Icon**: Blue Web Shield icon with popup block symbol.
+- **Decoy UI**: Clicking the extension icon displays a convincing popup blocker dashboard:
+  - Toggle switch: *"Protection Active / Protection Paused"* (clicks work visually to fool the child, but do **nothing** to the underlying YouTube rules).
+  - Fake counters: *"Popups Blocked: 247"*, *"Overlays Prevented: 89"*, *"Trackers: 1,412"*.
+  - Description: *"Blocks intrusive popups, unwanted overlays, and background redirect banners across all visited websites."*
+- **Disguised YouTube Block Screen**: If an unapproved video is opened on YouTube, it appears as a security/network content restriction:
+  - `⚠️ Content Unavailable: Playback from this channel is restricted under current security policy.`
+  - Button: `[ 🏠 Return to YouTube Home ]`
+  - It does **not** mention "Parental Control" or "Whitelist", so the child won't know an extension is responsible.
 
-![Popup Blocker dashboard shown in the extension popup](docs/screenshots/popup-decoy.png)
+---
 
-*The toolbar popup's dashboard. Its toggle is a decoy and does not switch the YouTube filtering on or off.*
+## 🔑 The Secret Easter Egg Trigger
 
-### Parent controls
+To open the real Parent / Admin Control Panel:
 
-![Parent control panel showing bypass controls and illustrative approved channels](docs/screenshots/popup-parent-panel.png)
+1. Click the **Smart Popup Blocker Pro** icon in Brave's toolbar.
+2. In the description sentence:
+   > *"Bloc**k**s intrusive popups, unwanted overlays, and background redirect banners across all visited websites."*
+3. Click on the letter **`k`** in the word **`Blocks`**!
+   - *(The letter looks like completely normal, unclickable text).*
+4. A security prompt will slide open:
+   - Enter your password: **`varna`**
+   - Click **Unlock**.
 
-*The parent panel for managing the channel allowlist and temporary bypass. The channel entries shown are illustrative.*
+---
 
-### Options access
+## 🔓 Adult Temporary Bypass Mode
 
-![Administrator password prompt for the options page](docs/screenshots/options-lock.png)
+When you want to use YouTube yourself as an adult without any restrictions:
 
-*The options page is protected by the administrator password.*
+1. Unlock the secret panel (click the letter **`k`** in `Blocks` and enter `varna`).
+2. At the top of the panel, click one of the bypass buttons:
+   - **`⏸️ 1 Hour`**
+   - **`⏸️ 2 Hours`**
+   - **`⏸️ 3 Hours`**
+3. While the bypass is active:
+   - All YouTube restrictions are **completely lifted**.
+   - You can watch any channel, browse recommendations, and watch Shorts.
+   - A live countdown timer shows the remaining time.
+4. When you finish or walk away:
+   - Click **`🛑 Re-enable Child Blocking Now`** to immediately re-lock YouTube.
+   - Or, once the countdown timer expires, blocking automatically re-engages!
 
-### Channel settings
+---
 
-![Options page displaying the channel allowlist](docs/screenshots/options-channels.png)
+## 🩳 YouTube Shorts & Whitelist Protection
 
-*The options page includes channel management, bulk import, filtering controls, and backup tools. The channel entries shown are illustrative.*
+- When child protection is active:
+  - YouTube Shorts links, buttons, and carousels are completely hidden.
+  - Direct Shorts URLs are instantly aborted and redirected to YouTube Home.
+  - Watch / embed / live pages are **fail-closed**: playback is paused until the channel is confirmed whitelisted.
+  - Feed cards without resolvable channel identity are hidden until verified.
+  - Matching uses handle and channel ID only (display names are not trusted).
+  - Only whitelisted channels appear on YouTube.
 
-## Features
+---
 
-- Manage approved YouTube channels by handle, channel URL, or channel ID.
-- Add or remove channels in the popup or options page, and import multiple entries at once.
-- Filter YouTube video feeds against the saved allowlist.
-- Show a restricted-content overlay when opening a video from a channel that is not approved.
-- Browse approved channels from the **My Channels** page in YouTube.
-- Use the popup's temporary bypass controls when an adult needs unrestricted viewing.
+## 📦 Bulk Upload & Backup
 
-## Install in Brave or Chromium
+Open the extension **Options** page (after unlocking with the parent password):
 
-This project is loaded as an unpacked extension; there is no build step.
+### Bulk Add
+1. Go to **Bulk Add Channels**.
+2. Paste one handle/URL/Channel ID per line, **or** upload a `.txt` / `.csv` / `.json` file.
+3. JSON may be a bare array, `{ "whitelist": [...] }`, or `{ "channels": [...] }`.
 
-1. Clone or download this repository.
-2. Open `brave://extensions` (or `chrome://extensions` in Chrome).
-3. Turn on **Developer mode**.
-4. Choose **Load unpacked** and select the repository folder containing `manifest.json`.
-5. Pin **Smart Popup Blocker Pro** to the toolbar for convenient access.
+### Backup & Restore
+1. Go to **Backup & Restore**.
+2. **Export** downloads channels + filter rules (password excluded unless you opt in).
+3. **Restore** can **merge** or **replace** channels, and restores filter rules from the backup when present.
 
-After changing the extension's source files, return to the extensions page and click **Reload** on its card.
+---
 
-## Open the parent controls
+## 🔄 How to Reload in Brave
 
-1. Click the **Smart Popup Blocker Pro** toolbar icon.
-2. In the description, click the letter **k** in **“Blocks”** to reveal the administrator password prompt.
-3. Enter the administrator password and choose **Unlock**.
+1. Open Brave and go to:
+   ```text
+   brave://extensions
+   ```
+2. Find **Smart Popup Blocker Pro** (or the previous Whitelist Guard card).
+3. Click the **🔄 Reload** button on the card.
+4. Test clicking the extension icon and clicking the letter **`k`** in **`Blocks`**!
 
-The default password is **`varna`**. Change it after installation using **Change Password** in the popup or **Filter & Security Rules** in the options page.
+---
 
-You can also open the options page from the extension's context menu in `brave://extensions` or `chrome://extensions`, then unlock it with the same password.
+## Notes
 
-## Manage channels and settings
-
-- Add a channel in the popup using its handle, channel URL, or channel ID. On a YouTube video or channel page, the popup can offer a detected-channel quick-add button.
-- Use the options page to search and manage the channel list, bulk-import one channel per line, and access the rule and backup sections.
-- The popup includes a curated STEM channel preset.
-- The popup also provides 1-, 2-, and 3-hour bypass choices and a control to end a bypass early.
-- The decoy popup-blocker toggle only changes its displayed status. It does **not** enable or disable the YouTube filtering.
-
-## Permissions and data
-
-- **Storage:** saves the channel list and extension settings in the browser profile using `chrome.storage.local`.
-- **Tabs:** lets the popup inspect the active tab and detect a YouTube channel for quick-add.
-- **YouTube access:** the content script applies the page-level filtering on YouTube domains. The extension may request a YouTube channel page to look up missing avatar information.
-
-The administrator password is stored in extension storage and acts as a convenience lock, not strong authentication. Anyone who can control the browser profile or manage its extensions may be able to inspect, disable, or remove the extension. Change the default password and use appropriate browser/device supervision for stronger parental controls.
-
-## License
-
-This project is distributed under the [Apache License 2.0](LICENSE).
+- Adult bypass expiry is enforced by the YouTube page and a background alarm — it no longer depends on the popup staying open.
+- Extension-level filtering is not tamper-proof if the child can disable extensions; use browser managed policies for stronger locks.
+- Change the default password (`varna`) after install.

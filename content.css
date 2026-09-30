@@ -11,41 +11,41 @@
   display: none !important;
 }
 
-/* 2. Hover Preview / Inline Autoplay Blocking */
-html:not(.yt-wl-bypassed) ytd-video-preview,
-html:not(.yt-wl-bypassed) #inline-preview-player,
-html:not(.yt-wl-bypassed) ytd-inline-preview-renderer,
-html:not(.yt-wl-bypassed) #video-preview,
-html:not(.yt-wl-bypassed) #preview-player,
-html:not(.yt-wl-bypassed) #mouseover-overlay,
-html:not(.yt-wl-bypassed) ytd-thumbnail #hover-overlays,
-html:not(.yt-wl-bypassed) [id*="inline-preview"] {
+/* 2. Hover Preview / Inline Autoplay Blocking (gated by settings class) */
+html.yt-wl-block-preview:not(.yt-wl-bypassed) ytd-video-preview,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #inline-preview-player,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) ytd-inline-preview-renderer,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #video-preview,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #preview-player,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #mouseover-overlay,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) ytd-thumbnail #hover-overlays,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) [id*="inline-preview"] {
   display: none !important;
   pointer-events: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
 }
 
-/* 3. TOTAL SHORTS BLOCKING */
-html:not(.yt-wl-bypassed) a[title="Shorts"],
-html:not(.yt-wl-bypassed) a[href^="/shorts"],
-html:not(.yt-wl-bypassed) a[href*="/shorts/"],
-html:not(.yt-wl-bypassed) ytd-guide-entry-renderer:has(a[title="Shorts"]),
-html:not(.yt-wl-bypassed) ytd-guide-entry-renderer:has(a[href^="/shorts"]),
-html:not(.yt-wl-bypassed) ytd-mini-guide-entry-renderer[aria-label="Shorts"],
-html:not(.yt-wl-bypassed) ytd-mini-guide-entry-renderer:has(a[href^="/shorts"]),
-html:not(.yt-wl-bypassed) ytd-rich-shelf-renderer[is-shorts],
-html:not(.yt-wl-bypassed) ytd-reel-shelf-renderer,
-html:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-rich-shelf-renderer),
-html:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
-html:not(.yt-wl-bypassed) ytd-reel-item-renderer,
-html:not(.yt-wl-bypassed) yt-lockup-view-model:has(a[href*="/shorts/"]),
-html:not(.yt-wl-bypassed) ytd-rich-item-renderer:has(a[href*="/shorts/"]),
-html:not(.yt-wl-bypassed) ytd-video-renderer:has(a[href*="/shorts/"]),
-html:not(.yt-wl-bypassed) ytd-compact-video-renderer:has(a[href*="/shorts/"]),
-html:not(.yt-wl-bypassed) ytd-shorts,
-html:not(.yt-wl-bypassed) #shorts-container,
-html:not(.yt-wl-bypassed) [is-shorts] {
+/* 3. TOTAL SHORTS BLOCKING (gated by settings class) */
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) a[title="Shorts"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) a[href^="/shorts"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) a[href*="/shorts/"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-guide-entry-renderer:has(a[title="Shorts"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-guide-entry-renderer:has(a[href^="/shorts"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-mini-guide-entry-renderer[aria-label="Shorts"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-mini-guide-entry-renderer:has(a[href^="/shorts"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-shelf-renderer[is-shorts],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-reel-shelf-renderer,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-reel-item-renderer,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) yt-lockup-view-model:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-item-renderer:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-video-renderer:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-compact-video-renderer:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-shorts,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) #shorts-container,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) [is-shorts] {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
@@ -71,6 +71,51 @@ html:not(.yt-wl-bypassed) [is-shorts] {
   text-align: center;
   box-sizing: border-box;
   padding: 24px;
+}
+
+/* Media hold — hide/disable playback while pending or locked */
+html.yt-wl-media-held video.html5-main-video,
+html.yt-wl-media-held #movie_player video,
+html.yt-wl-media-held .html5-video-player video {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html.yt-wl-media-held.yt-wl-channel-blocked video {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* Full-page cover for blocked channel pages (/@handle, /channel/…) */
+.yt-wl-channel-page-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  background: #0b0f19 !important;
+}
+
+/* Kill featured / cinematic autoplay on blocked channel pages */
+html.yt-wl-channel-blocked ytd-channel-video-player-renderer,
+html.yt-wl-channel-blocked #cinematics,
+html.yt-wl-channel-blocked #cinematics-container,
+html.yt-wl-channel-blocked ytd-player,
+html.yt-wl-channel-blocked #player-container,
+html.yt-wl-channel-blocked .html5-video-player,
+html.yt-wl-channel-blocked ytd-channel-featured-content-renderer,
+html.yt-wl-channel-blocked ytd-video-primary-info-renderer,
+html.yt-wl-channel-blocked #channel-header-container ~ #content ytd-player,
+html.yt-wl-channel-blocked #page-header ~ * ytd-player,
+html.yt-wl-channel-blocked video {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  max-height: 0 !important;
 }
 
 .yt-wl-player-blocked .ytp-chrome-bottom,
@@ -206,13 +251,44 @@ html:not(.yt-wl-bypassed) ytd-watch-flexy[flexy] #primary-inner.ytd-watch-flexy 
   margin: 0 auto !important;
 }
 
-/* ================= 7. HIDE HOME, SUBSCRIPTIONS, YOU IN LEFT GUIDE ================= */
+/* ================= 7. SIMPLIFIED LEFT GUIDE: ONLY "MY CHANNELS" ================= */
+/* Hide every native guide section (Explore, Library, subscriptions lists, etc.) */
+html:not(.yt-wl-bypassed) ytd-guide-renderer #sections > ytd-guide-section-renderer:not(:first-child),
+html:not(.yt-wl-bypassed) ytd-guide-renderer ytd-guide-section-renderer:not(:first-child),
+/* Hide native entries in the first section (Home, Shorts, Subs, You…) — keep our custom link */
 html:not(.yt-wl-bypassed) ytd-guide-section-renderer:first-child ytd-guide-entry-renderer,
-html:not(.yt-wl-bypassed) ytd-guide-section-renderer:nth-child(2),
-html:not(.yt-wl-bypassed) ytd-guide-section-renderer:nth-child(3),
-html:not(.yt-wl-bypassed) ytd-guide-section-renderer:nth-child(4),
+html:not(.yt-wl-bypassed) ytd-guide-section-renderer:first-child ytd-guide-collapsible-entry-renderer,
+html:not(.yt-wl-bypassed) ytd-guide-section-renderer:first-child ytd-guide-collapsible-section-entry-renderer,
+/* Hide section titles like "Explore" */
+html:not(.yt-wl-bypassed) ytd-guide-renderer #header-container,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #guide-section-title,
+html:not(.yt-wl-bypassed) ytd-guide-renderer h3,
+/* Hide sidebar footer (About / Creators / Terms…) */
+html:not(.yt-wl-bypassed) ytd-guide-renderer #footer,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #guide-links-primary,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #guide-links-secondary,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #copyright,
+/* Collapsed mini-rail: hide all native icons */
 html:not(.yt-wl-bypassed) ytd-mini-guide-renderer ytd-mini-guide-entry-renderer {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure our custom entries stay visible */
+html:not(.yt-wl-bypassed) #yt-wl-guide-link,
+html:not(.yt-wl-bypassed) #yt-wl-mini-guide-link,
+.yt-wl-custom-guide-entry,
+.yt-wl-custom-mini-guide-entry {
+  display: flex !important;
+  visibility: visible !important;
+  height: auto !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
 }
 
 /* Custom "My Channels" Left Guide Item */

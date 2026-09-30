@@ -173,13 +173,19 @@
       </div>
 
       <!-- ADMIN FOOTER SETTINGS -->
-      <div class="admin-section settings-row">
-        <button id="btn-change-pass" class="btn btn-secondary btn-sm">
+      <div class="admin-section settings-footer">
+        <button id="btn-change-pass" class="btn btn-secondary btn-sm btn-full">
           🔑 Change Password
         </button>
-        <button id="btn-load-stem" class="btn btn-secondary btn-sm">
-          🧪 Load STEM Preset
-        </button>
+        <div class="settings-row">
+          <button id="btn-import-channels" class="btn btn-secondary btn-sm">
+            📂 Import Channels
+          </button>
+          <button id="btn-backup-channels" class="btn btn-secondary btn-sm">
+            💾 Backup Channels
+          </button>
+        </div>
+        <input type="file" id="import-channels-file" accept=".txt,.csv,.json,text/plain,text/csv,application/json" hidden>
       </div>
     </div>
   </div>
