@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Popup Blocker Pro - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <!-- Fullscreen Authorization Screen -->
+  <div id="options-lock-overlay" class="options-lock-overlay">
+    <div class="lock-modal-card">
+      <div class="lock-modal-icon">🔐</div>
+      <h2>Administrator Authorization Required</h2>
+      <p>Enter administrator security password to access advanced filter configuration:</p>
+      
+      <form id="options-lock-form" class="lock-modal-form">
+        <input 
+          type="password" 
+          id="options-pass-input" 
+          class="options-pass-input" 
+          placeholder="Password" 
+          autocomplete="off" 
+          autofocus 
+          required
+        >
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Unlock Settings
+        </button>
+      </form>
+      <div id="options-lock-error" class="lock-error hidden">Incorrect password. Please try again.</div>
+    </div>
+  </div>
+
+  <!-- Dashboard Layout (Revealed once authenticated) -->
+  <div id="options-app" class="options-layout hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="icons/icon48.png" alt="Logo" class="sidebar-logo">
+        <div>
+          <h2>Popup Blocker Pro</h2>
+          <span class="version-tag">Admin Console v2.5</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#channels" class="nav-item active">📋 Whitelisted Channels</a>
+        <a href="#bulk-add" class="nav-item">⚡ Bulk Add Channels</a>
+        <a href="#rules" class="nav-item">⚙️ Filter & Security Rules</a>
+        <a href="#backup" class="nav-item">💾 Backup & Restore</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="btn-options-lock" class="btn btn-secondary btn-full" style="margin-bottom: 8px;">
+          🔒 Lock Console
+        </button>
+        <div class="status-badge" id="shield-status-badge">● Shield Active</div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Section: Channels Manager -->
+      <section id="channels" class="content-section active">
+        <div class="section-header">
+          <div>
+            <h1>Permitted Channels</h1>
+            <p class="section-lead">Only video content from these verified channels will be displayed.</p>
+          </div>
+          <div class="header-actions">
+            <span class="counter-pill" id="total-count-pill">0 Channels</span>
+          </div>
+        </div>
+
+        <!-- Add Channel Bar -->
+        <div class="card add-card">
+          <form id="options-add-form" class="flex-form">
+            <input 
+              type="text" 
+              id="opt-channel-input" 
+              placeholder="Enter channel handle (e.g. @veritasium), URL, or Channel ID" 
+              required
+            >
+            <button type="submit" class="btn btn-primary">➕ Add Channel</button>
+          </form>
+        </div>
+
+        <!-- Channels Table -->
+        <div class="card">
+          <div class="table-toolbar">
+            <input type="text" id="opt-search-input" placeholder="Search whitelisted channels..." class="table-search">
+          </div>
+          <div class="channels-table-container">
+            <table class="channels-table">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Identifier</th>
+                  <th>Date Added</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="channels-table-body">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+            <div id="opt-empty-table" class="empty-table hidden">
+              <div class="empty-icon">🛡️</div>
+              <h3>No Channels In Whitelist</h3>
+              <p>Add channels using the form above or import your backup.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Bulk Add -->
+      <section id="bulk-add" class="content-section">
+        <div class="section-header">
+          <div>
+            <h1>Bulk Add Channels</h1>
+            <p class="section-lead">Paste handles/URLs, or upload a .txt / .csv / .json channel list.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <textarea 
+            id="bulk-textarea" 
+            class="bulk-input" 
+            rows="8" 
+            placeholder="@veritasium&#10;@3blue1brown&#10;https://www.youtube.com/@kurzgesagt&#10;UCHnyfMqiRRG1u-2MsSQLbXA"
+          ></textarea>
+          <div class="bulk-footer">
+            <span class="hint-text">One channel per line: handle, URL, or Channel ID (UC…).</span>
+            <button id="btn-process-bulk" class="btn btn-primary">⚡ Import Pasted Lines</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px;">
+          <h3 style="margin-bottom: 8px;">Upload Channel List File</h3>
+          <p class="section-lead" style="margin-bottom: 14px;">
+            Accepts <code>.txt</code> / <code>.csv</code> (one channel per line) or a <code>.json</code> array of
+            <code>{ "handle", "channelId", "name" }</code> objects / backup whitelist arrays.
+          </p>
+          <div class="bulk-footer">
+            <label for="bulk-file-input" class="btn btn-secondary">📂 Choose File</label>
+            <input type="file" id="bulk-file-input" accept=".txt,.csv,.json,text/plain,text/csv,application/json" style="display: none;">
+            <span id="bulk-file-status" class="hint-text">No file selected</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Rules -->
+      <section id="rules" class="content-section">
+        <div class="section-header">
+          <div>
+            <h1>Filter & Security Rules</h1>
+            <p class="section-lead">Configure playback restrictions and master password.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="rule-row">
+            <div class="rule-details">
+              <h3>Hide Non-Whitelisted Videos</h3>
+              <p>Hides all unapproved video entries across Home, Subscriptions, Search Results, and Sidebar Recommendations.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="rule-hide-non-wl" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="rule-row highlight-row">
+            <div class="rule-details">
+              <h3>Block Hover Preview Mode (Auto-play on Hover)</h3>
+              <p>Disables inline video auto-play when hovering the mouse cursor over video thumbnails.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="rule-block-hover" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-details">
+              <h3>Block Watch Page Playback</h3>
+              <p>When directly opening an unapproved video, halts playback and displays a restricted content screen.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="rule-block-watch" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="rule-row highlight-row">
+            <div class="rule-details">
+              <h3>Total YouTube Shorts Blocking</h3>
+              <p>Hides all Shorts carousels, tabs, and automatically redirects away if a short URL is loaded.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="rule-hide-shorts" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="rule-row highlight-row">
+            <div class="rule-details">
+              <h3>Hide Ads & Sponsored Results</h3>
+              <p>Removes in-feed ads, promoted videos, and sponsored search rows (e.g. brand banners).</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="rule-hide-ads" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="rule-row">
+            <div class="rule-details">
+              <h3>Feed Data Filter (Advanced)</h3>
+              <p>Removes non-whitelisted videos from YouTube’s data before cards appear (home, search, related). Falls back to on-page hiding if needed. Disable if feeds look broken after a YouTube update.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="rule-feed-data-filter" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <!-- Password Setting -->
+          <div class="rule-row highlight-row">
+            <div class="rule-details">
+              <h3>Master Password</h3>
+              <p>The password required to unlock settings and authorize channels.</p>
+            </div>
+            <button id="btn-options-change-pass" class="btn btn-secondary">
+              Change Password
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Backup & Restore -->
+      <section id="backup" class="content-section">
+        <div class="section-header">
+          <div>
+            <h1>Backup & Restore</h1>
+            <p class="section-lead">Export and import whitelist channels and filter rules.</p>
+          </div>
+        </div>
+
+        <div class="card grid-2">
+          <div class="backup-box">
+            <h3>Export Backup</h3>
+            <p>Download a JSON file with all whitelisted channels and active filter rules. Password is excluded by default.</p>
+            <label class="backup-check">
+              <input type="checkbox" id="export-include-password">
+              Include parent password in export (less safe)
+            </label>
+            <button id="btn-export-backup" class="btn btn-secondary">💾 Download Backup (.json)</button>
+          </div>
+          <div class="backup-box">
+            <h3>Restore Backup</h3>
+            <p>Upload a previously exported JSON backup. Choose merge or replace for channels; rules are always restored when present.</p>
+            <label class="backup-check">
+              <input type="radio" name="restore-mode" value="merge" checked>
+              Merge channels (keep existing + add new)
+            </label>
+            <label class="backup-check">
+              <input type="radio" name="restore-mode" value="replace">
+              Replace channels (overwrite whitelist)
+            </label>
+            <label class="backup-check">
+              <input type="checkbox" id="restore-include-password">
+              Restore password from backup (if included)
+            </label>
+            <label for="restore-file-input" class="btn btn-secondary">📂 Select JSON File</label>
+            <input type="file" id="restore-file-input" accept=".json,application/json" style="display: none;">
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,546 @@
+/* Smart Popup Blocker Pro - Content Stylesheet */
+
+/* 1. Hiding Non-Whitelisted Videos */
+.yt-wl-blocked,
+[data-yt-wl-status="blocked"] {
+  display: none !important;
+}
+
+/* Hide empty shelves where all child items are filtered out */
+.yt-wl-empty-shelf {
+  display: none !important;
+}
+
+/* 2. Hover Preview / Inline Autoplay Blocking (gated by settings class) */
+html.yt-wl-block-preview:not(.yt-wl-bypassed) ytd-video-preview,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #inline-preview-player,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) ytd-inline-preview-renderer,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #video-preview,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #preview-player,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) #mouseover-overlay,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) ytd-thumbnail #hover-overlays,
+html.yt-wl-block-preview:not(.yt-wl-bypassed) [id*="inline-preview"] {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* 3. TOTAL SHORTS BLOCKING (gated by settings class) */
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) a[title="Shorts"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) a[href^="/shorts"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) a[href*="/shorts/"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-guide-entry-renderer:has(a[title="Shorts"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-guide-entry-renderer:has(a[href^="/shorts"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-mini-guide-entry-renderer[aria-label="Shorts"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-mini-guide-entry-renderer:has(a[href^="/shorts"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-shelf-renderer[is-shorts],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-reel-shelf-renderer,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-item-section-renderer:has(ytd-reel-shelf-renderer),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-item-section-renderer:has(grid-shelf-view-model),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-item-section-renderer:has(ytm-shorts-lockup-view-model),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-item-section-renderer:has([href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) grid-shelf-view-model,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) grid-shelf-view-model:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytm-shorts-lockup-view-model,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-reel-item-renderer,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) yt-lockup-view-model:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-item-renderer:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-video-renderer:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-compact-video-renderer:has(a[href*="/shorts/"]),
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-shorts,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) #shorts-container,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) [is-shorts],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) [class*="shortsLockup"],
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-search-pyv-renderer:has(a[href*="/shorts/"]) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: none !important;
+}
+
+/* 3b. ADS / SPONSORED (gated by settings class) */
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-ad-slot-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-promoted-sparkles-text-search-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-promoted-sparkles-web-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-promoted-video-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-search-pyv-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-in-feed-ad-layout-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-display-ad-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-banner-promo-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-statement-banner-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-brand-video-shelf-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-brand-video-singleton-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-action-companion-ad-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-promoted-sparkles-text-search-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-ad-slot-renderer,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-rich-item-renderer:has(ytd-ad-slot-renderer),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-rich-item-renderer:has(ytd-display-ad-renderer),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-item-section-renderer:has(ytd-ad-slot-renderer),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-item-section-renderer:has(ytd-promoted-sparkles-text-search-renderer),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-item-section-renderer:has(ytd-search-pyv-renderer),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-video-renderer:has([aria-label*="Sponsored" i]),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-video-renderer:has(.badge-style-type-ad),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) ytd-video-renderer:has([class*="badge"] [aria-label*="Sponsored" i]),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) yt-lockup-view-model:has([aria-label*="Sponsored" i]),
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) .yt-wl-ad-blocked,
+html.yt-wl-hide-ads:not(.yt-wl-bypassed) [data-yt-wl-ad="1"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: none !important;
+}
+
+/* 4. Watch Page Blocker Overlay - Camouflaged as Security/Content Policy */
+.yt-wl-watch-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  background: #0b0f19;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 24px;
+}
+
+/* Media hold — hide/disable playback while pending or locked */
+html.yt-wl-media-held video.html5-main-video,
+html.yt-wl-media-held #movie_player video,
+html.yt-wl-media-held .html5-video-player video {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html.yt-wl-media-held.yt-wl-channel-blocked video {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* Full-page cover for blocked channel pages (/@handle, /channel/…) */
+.yt-wl-channel-page-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  background: #0b0f19 !important;
+}
+
+/* Kill featured / cinematic autoplay on blocked channel pages */
+html.yt-wl-channel-blocked ytd-channel-video-player-renderer,
+html.yt-wl-channel-blocked #cinematics,
+html.yt-wl-channel-blocked #cinematics-container,
+html.yt-wl-channel-blocked ytd-player,
+html.yt-wl-channel-blocked #player-container,
+html.yt-wl-channel-blocked .html5-video-player,
+html.yt-wl-channel-blocked ytd-channel-featured-content-renderer,
+html.yt-wl-channel-blocked ytd-video-primary-info-renderer,
+html.yt-wl-channel-blocked #channel-header-container ~ #content ytd-player,
+html.yt-wl-channel-blocked #page-header ~ * ytd-player,
+html.yt-wl-channel-blocked video {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  max-height: 0 !important;
+}
+
+.yt-wl-player-blocked .ytp-chrome-bottom,
+.yt-wl-player-blocked .ytp-chrome-top,
+.yt-wl-player-blocked .ytp-gradient-bottom,
+.yt-wl-player-blocked .ytp-gradient-top,
+.yt-wl-player-blocked .html5-video-player video,
+.yt-wl-player-blocked video {
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.yt-wl-watch-card {
+  max-width: 440px;
+  width: 90%;
+  background: #151e33;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 16px;
+  padding: 34px 28px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+}
+
+.yt-wl-icon-shield {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.yt-wl-watch-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  line-height: 1.3;
+}
+
+.yt-wl-watch-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.yt-wl-channel-highlight {
+  display: inline-block;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 4px 0 18px 0;
+  word-break: break-all;
+}
+
+.yt-wl-parent-notice {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 22px;
+  line-height: 1.4;
+}
+
+.yt-wl-btn-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.yt-wl-btn-home:hover {
+  background: #1d4ed8;
+}
+
+/* In-Page Whitelist Buttons - Completely Hidden */
+.yt-wl-quick-action-btn,
+#yt-wl-channel-header-btn {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ================= 5. HIDE TOPIC RIBBON UNDER SEARCH BAR ================= */
+html:not(.yt-wl-bypassed) ytd-feed-filter-chip-bar-renderer,
+html:not(.yt-wl-bypassed) yt-chip-cloud-renderer,
+html:not(.yt-wl-bypassed) #chips-wrapper,
+html:not(.yt-wl-bypassed) iron-selector#chips,
+html:not(.yt-wl-bypassed) ytd-rich-grid-renderer #header,
+html:not(.yt-wl-bypassed) #chips.ytd-feed-filter-chip-bar-renderer {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ================= 6. REMOVE VIDEO SUGGESTIONS ON THE SIDE WHEN PLAYING ================= */
+html:not(.yt-wl-bypassed) ytd-watch-flexy #secondary,
+html:not(.yt-wl-bypassed) #related,
+html:not(.yt-wl-bypassed) ytd-watch-next-secondary-results-renderer {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html:not(.yt-wl-bypassed) ytd-watch-flexy[flexy] #primary.ytd-watch-flexy {
+  max-width: 100% !important;
+  padding-right: 0 !important;
+}
+
+html:not(.yt-wl-bypassed) ytd-watch-flexy[flexy] #primary-inner.ytd-watch-flexy {
+  max-width: 1100px !important;
+  margin: 0 auto !important;
+}
+
+/* ================= 7. SIMPLIFIED LEFT GUIDE: ONLY "MY CHANNELS" ================= */
+/* Hide every native guide section (Explore, Library, subscriptions lists, etc.) */
+html:not(.yt-wl-bypassed) ytd-guide-renderer #sections > ytd-guide-section-renderer:not(:first-child),
+html:not(.yt-wl-bypassed) ytd-guide-renderer ytd-guide-section-renderer:not(:first-child),
+/* Hide native entries in the first section (Home, Shorts, Subs, You…) — keep our custom link */
+html:not(.yt-wl-bypassed) ytd-guide-section-renderer:first-child ytd-guide-entry-renderer,
+html:not(.yt-wl-bypassed) ytd-guide-section-renderer:first-child ytd-guide-collapsible-entry-renderer,
+html:not(.yt-wl-bypassed) ytd-guide-section-renderer:first-child ytd-guide-collapsible-section-entry-renderer,
+/* Hide section titles like "Explore" */
+html:not(.yt-wl-bypassed) ytd-guide-renderer #header-container,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #guide-section-title,
+html:not(.yt-wl-bypassed) ytd-guide-renderer h3,
+/* Hide sidebar footer (About / Creators / Terms…) */
+html:not(.yt-wl-bypassed) ytd-guide-renderer #footer,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #guide-links-primary,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #guide-links-secondary,
+html:not(.yt-wl-bypassed) ytd-guide-renderer #copyright,
+/* Collapsed mini-rail: hide all native icons */
+html:not(.yt-wl-bypassed) ytd-mini-guide-renderer ytd-mini-guide-entry-renderer {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure our custom entries stay visible */
+html:not(.yt-wl-bypassed) #yt-wl-guide-link,
+html:not(.yt-wl-bypassed) #yt-wl-mini-guide-link,
+.yt-wl-custom-guide-entry,
+.yt-wl-custom-mini-guide-entry {
+  display: flex !important;
+  visibility: visible !important;
+  height: auto !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Custom "My Channels" Left Guide Item */
+.yt-wl-custom-guide-entry {
+  display: flex !important;
+  align-items: center;
+  padding: 0 12px;
+  height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #f1f1f1 !important;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  margin: 4px 12px;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.yt-wl-custom-guide-entry:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.yt-wl-custom-guide-entry.active {
+  background: rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+  color: #38bdf8 !important;
+}
+
+.yt-wl-guide-icon {
+  font-size: 20px;
+  margin-right: 22px;
+  display: flex;
+  align-items: center;
+}
+
+.yt-wl-custom-mini-guide-entry {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0 14px 0;
+  cursor: pointer;
+  color: #f1f1f1 !important;
+  font-size: 10px;
+  border-radius: 10px;
+  margin: 0 4px;
+  text-decoration: none;
+}
+
+.yt-wl-custom-mini-guide-entry:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.yt-wl-custom-mini-guide-entry .yt-wl-guide-icon {
+  font-size: 20px;
+  margin-right: 0;
+  margin-bottom: 6px;
+}
+
+/* ================= 8. "MY CHANNELS" HUB VIEW ================= */
+.yt-wl-channels-hub {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 20px 48px 20px;
+  box-sizing: border-box;
+}
+
+.yt-wl-hub-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.yt-wl-hub-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.yt-wl-hub-subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.yt-wl-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.yt-wl-hub-card {
+  background: #181f30;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.yt-wl-hub-card:hover {
+  transform: translateY(-3px);
+  background: #1e2840;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.yt-wl-hub-avatar-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin-bottom: 14px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.yt-wl-hub-avatar-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  background: #1e293b;
+  display: block;
+}
+
+.yt-wl-hub-avatar-fallback {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+}
+
+.yt-wl-hub-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.yt-wl-hub-handle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 18px;
+}
+
+.yt-wl-hub-action-btn {
+  background: #2563eb;
+  color: #ffffff;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.yt-wl-hub-card:hover .yt-wl-hub-action-btn {
+  background: #1d4ed8;
+}
+
+.yt-wl-hub-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: #181f30;
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  grid-column: 1 / -1;
+}
+
+.yt-wl-hub-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.yt-wl-hub-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
