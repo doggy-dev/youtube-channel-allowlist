@@ -1,0 +1,19 @@
+# Reference only — do not publish
+Plugin-commercial/
+
+# OS / editor
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.code-workspace
+
+# Local / secrets
+.env
+.env.*
+*.pem
+*.key
