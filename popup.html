@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Popup Blocker Pro</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- 1. DECOY VIEW (Seen by the child) -->
+  <div id="decoy-view" class="decoy-view">
+    <header class="decoy-header">
+      <div class="decoy-logo">
+        <img src="icons/icon32.png" alt="Shield Logo">
+        <div>
+          <div class="decoy-title">Popup Blocker Pro</div>
+          <div class="decoy-version">Engine v2.4 • Active</div>
+        </div>
+      </div>
+      <div class="decoy-badge">PRO</div>
+    </header>
+
+    <div class="decoy-body">
+      <!-- Decoy Switch Card -->
+      <div class="decoy-card toggle-card">
+        <div class="toggle-info">
+          <span class="toggle-label" id="decoy-toggle-status">Protection Active</span>
+          <span class="toggle-sub">Blocking popups & overlays</span>
+        </div>
+        <label class="decoy-switch">
+          <input type="checkbox" id="decoy-master-toggle" checked>
+          <span class="decoy-slider round"></span>
+        </label>
+      </div>
+
+      <!-- Decoy Stats -->
+      <div class="decoy-stats-grid">
+        <div class="decoy-stat-box">
+          <div class="stat-num" id="stat-popups">247</div>
+          <div class="stat-label">Popups</div>
+        </div>
+        <div class="decoy-stat-box">
+          <div class="stat-num" id="stat-overlays">89</div>
+          <div class="stat-label">Overlays</div>
+        </div>
+        <div class="decoy-stat-box">
+          <div class="stat-num" id="stat-trackers">1,412</div>
+          <div class="stat-label">Trackers</div>
+        </div>
+      </div>
+
+      <!-- Decoy Description with SECRET TRIGGER LETTER -->
+      <div class="decoy-desc-box">
+        <p class="decoy-desc-text">
+          Bloc<span id="secret-trigger-letter" class="stealth-letter" title="">k</span>s intrusive popups, unwanted overlays, and background redirect banners across all visited websites.
+        </p>
+      </div>
+
+      <div class="decoy-footer">
+        <span class="pulse-dot"></span> Protected by Smart Blocker Network
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. SECRET PASSWORD MODAL (Triggered by clicking the secret letter) -->
+  <div id="secret-password-modal" class="secret-modal hidden">
+    <div class="secret-modal-card">
+      <div class="secret-icon">🔐</div>
+      <h3 class="secret-title">Security Authorization</h3>
+      <p class="secret-desc">Enter administrator password:</p>
+      
+      <form id="secret-password-form">
+        <input 
+          type="password" 
+          id="secret-password-input" 
+          class="secret-input" 
+          placeholder="Password" 
+          autocomplete="off" 
+          required
+        >
+        <div class="secret-btn-row">
+          <button type="button" id="btn-cancel-secret" class="btn btn-secondary btn-sm">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Unlock</button>
+        </div>
+      </form>
+      <div id="secret-error" class="secret-error hidden">Invalid password.</div>
+    </div>
+  </div>
+
+  <!-- 3. REAL PARENT CONTROL PANEL (Revealed upon entering "varna") -->
+  <div id="admin-panel" class="admin-panel hidden">
+    <header class="admin-header">
+      <div class="admin-title">
+        <span>🛡️ Parent Control Mode</span>
+      </div>
+      <button id="btn-exit-to-decoy" class="btn btn-sm btn-secondary" title="Lock and return to decoy popup blocker">
+        🔒 Return to Decoy
+      </button>
+    </header>
+
+    <div class="admin-content">
+      <!-- ADULT TEMPORARY BYPASS SECTION -->
+      <div class="admin-section bypass-section">
+        <div class="section-title-row">
+          <span class="section-title">Adult Temporary Bypass</span>
+          <span id="bypass-status-badge" class="badge-active-bypass hidden">ACTIVE</span>
+        </div>
+        <p class="admin-subtext">Temporarily lift all YouTube blocks for adult viewing:</p>
+
+        <!-- Live Countdown when active -->
+        <div id="bypass-active-card" class="bypass-active-card hidden">
+          <div class="bypass-timer-label">Bypass Remaining:</div>
+          <div id="bypass-countdown" class="bypass-countdown">00:00:00</div>
+          <button id="btn-cancel-bypass" class="btn btn-danger btn-sm" style="margin-top: 8px;">
+            🛑 Re-enable Child Blocking Now
+          </button>
+        </div>
+
+        <!-- Bypass Buttons -->
+        <div id="bypass-btn-grid" class="bypass-btn-grid">
+          <button class="btn btn-secondary btn-bypass" data-hours="1">
+            ⏸️ 1 Hour
+          </button>
+          <button class="btn btn-secondary btn-bypass" data-hours="2">
+            ⏸️ 2 Hours
+          </button>
+          <button class="btn btn-secondary btn-bypass" data-hours="3">
+            ⏸️ 3 Hours
+          </button>
+        </div>
+      </div>
+
+      <!-- WHITELIST MANAGEMENT SECTION -->
+      <div class="admin-section">
+        <div class="section-title-row">
+          <span class="section-title">Whitelisted Channels</span>
+          <span class="counter-badge" id="wl-count-badge">0</span>
+        </div>
+        <p class="admin-subtext">Channels your child is permitted to watch:</p>
+
+        <!-- ACTIVE YOUTUBE CHANNEL QUICK ADD -->
+        <div id="admin-current-channel-card" class="admin-current-channel-card hidden">
+          <div class="current-channel-details">
+            <span class="current-channel-tag">DETECTED CURRENT CHANNEL</span>
+            <div class="current-channel-title" id="admin-current-channel-name">--</div>
+            <div class="current-channel-sub" id="admin-current-channel-handle">--</div>
+          </div>
+          <button type="button" id="admin-current-action-btn" class="btn btn-sm btn-primary">
+            + Add
+          </button>
+        </div>
+
+        <!-- Add Channel Input -->
+        <form id="admin-add-form" class="admin-add-form">
+          <div class="input-row">
+            <input 
+              type="text" 
+              id="admin-channel-input" 
+              placeholder="Enter @handle, URL, or Channel ID" 
+              required
+            >
+            <button type="submit" class="btn btn-primary btn-sm">Add</button>
+          </div>
+        </form>
+
+        <!-- Whitelist Scroll Area -->
+        <div class="admin-whitelist-area">
+          <div id="admin-whitelist-list" class="admin-wl-list"></div>
+          <div id="admin-empty-wl" class="empty-state hidden">
+            No whitelisted channels. Add one above.
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN FOOTER SETTINGS -->
+      <div class="admin-section settings-row">
+        <button id="btn-change-pass" class="btn btn-secondary btn-sm">
+          🔑 Change Password
+        </button>
+        <button id="btn-load-stem" class="btn btn-secondary btn-sm">
+          🧪 Load STEM Preset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
