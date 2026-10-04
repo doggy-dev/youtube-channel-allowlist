@@ -326,6 +326,34 @@ body {
   background-color: var(--bg-card-hover);
 }
 
+.order-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-order {
+  width: 28px;
+  height: 22px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-sidebar);
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+
+.btn-order:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+
+.btn-order:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .channel-cell {
   display: flex;
   align-items: center;

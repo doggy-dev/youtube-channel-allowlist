@@ -267,6 +267,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Whitelist Rendering
+  async function moveChannel(fromIndex, toIndex) {
+    const result = await chrome.runtime.sendMessage({
+      action: 'whitelistReorder',
+      fromIndex,
+      toIndex
+    });
+    if (result?.whitelist) {
+      settings.whitelist = result.whitelist;
+    }
+    renderWhitelist();
+    updateDetectedButtonState();
+  }
+
   function renderWhitelist() {
     const list = settings.whitelist || [];
     wlCountBadge.textContent = list.length;
@@ -280,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     adminEmptyWl.classList.add('hidden');
 
-    list.forEach(item => {
+    list.forEach((item, index) => {
       const itemEl = document.createElement('div');
       itemEl.className = 'admin-wl-item';
 
@@ -316,6 +329,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       info.appendChild(text);
 
+      const actions = document.createElement('div');
+      actions.className = 'wl-item-actions';
+
+      const upBtn = document.createElement('button');
+      upBtn.className = 'btn-order-item';
+      upBtn.title = 'Move up';
+      upBtn.textContent = '↑';
+      upBtn.disabled = index === 0;
+      upBtn.addEventListener('click', async () => {
+        await moveChannel(index, index - 1);
+      });
+
+      const downBtn = document.createElement('button');
+      downBtn.className = 'btn-order-item';
+      downBtn.title = 'Move down';
+      downBtn.textContent = '↓';
+      downBtn.disabled = index === list.length - 1;
+      downBtn.addEventListener('click', async () => {
+        await moveChannel(index, index + 1);
+      });
+
       const delBtn = document.createElement('button');
       delBtn.className = 'btn-delete-item';
       delBtn.title = 'Remove';
@@ -329,8 +363,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateDetectedButtonState();
       });
 
+      actions.appendChild(upBtn);
+      actions.appendChild(downBtn);
+      actions.appendChild(delBtn);
+
       itemEl.appendChild(info);
-      itemEl.appendChild(delBtn);
+      itemEl.appendChild(actions);
       adminWlList.appendChild(itemEl);
     });
 

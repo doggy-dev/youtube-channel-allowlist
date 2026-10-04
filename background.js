@@ -1,4 +1,143 @@
 // Background Service Worker for Smart Popup Blocker Pro
+const DEFAULT_WHITELIST = [
+  {
+    id: "wl_sample_1",
+    handle: "@veritasium",
+    name: "Veritasium",
+    channelId: "UCHnyfMqiRRG1u-2MsSQLbXA",
+    avatarUrl: "https://yt3.googleusercontent.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797896543
+  },
+  {
+    id: "wl_sample_2",
+    handle: "@3blue1brown",
+    name: "3Blue1Brown",
+    channelId: "UCYO_jab_esuFRV4b17AJtAw",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797896543
+  },
+  {
+    id: "wl_sample_3",
+    handle: "@kurzgesagt",
+    name: "Kurzgesagt – In a Nutshell",
+    channelId: "UCsXVk37bltHxD1rDPwtNM8Q",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_n1Ribd7LwdP_qKtqWL3ZDfIgv9M1d6g78VwpHGXVR2Ir4=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797896543
+  },
+  {
+    id: "wl_1790797930271_uab5n",
+    handle: "@smartereveryday",
+    name: "Smarter Every Day",
+    channelId: "UC6107grRI4m032EDlSrVnQw",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_l59Ewmp0DHZBRWbY9dVqjd2_mWwvrn8ad0bJfmdbMRYcA=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790797930271_utspx",
+    handle: "@standupmaths",
+    name: "Stand-up Maths",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_kH1XY27N-S65HtyJ97eLeiYGSqanZuuVP2NgTzBt081h4=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790797930271_gry6l",
+    handle: "@johnnyharris",
+    name: "Johnny Harris",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_kswBDn49WW5IneVE-5RlKyud5GvdzyQQ5SJQyVvJ4S3pk=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790797930271_5xhgg",
+    handle: "@TED",
+    name: "TED",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790797930271_igkss",
+    handle: "@TheRoyalInstitution",
+    name: "The Royal Institution",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/MLoJXco9yJtL6yyTzJND1kQzj1xQkIivfnGgmerfxFgxP-43uAgJbMLfgVFdrHkMRSISr7-E=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790797930271_bsdmf",
+    handle: "@TEDx",
+    name: "TEDx Talks",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/1gDPO-4YPWFErfn3yQBnv0yxpkmiud1m5CrorApkOqUYdNd9FrZQ9xB9C9VmDt4EsgArnlwqAQc=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790797930271_nzct1",
+    handle: "@SciShow",
+    name: "SciShow",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/PeTBgposs2PwFQ9w75vPgEzKGZqHQb6slgisyh3dcF61uLD3y-tczPRhaH0s_AOSovMjtiBy1A=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790797930271_qrkuc",
+    handle: "@bigthink",
+    name: "bigthink",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/QWMOoT-7-bivHzD5AvaxHtC2aDl6tUjzAlsKsMo98EmOYfUUFpZGkKaDbA555fNqjqklJHeSjGc=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790797930271
+  },
+  {
+    id: "wl_1790939677915_59t0c",
+    handle: "@coldfusion",
+    name: "coldfusion",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_kJwvwnCgY68LsHj4YSaut8tOgK_RzFsiwaOhN13FWrwb8=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790939677915
+  },
+  {
+    id: "wl_1790939767505_stfkj",
+    handle: "@fryrsquared",
+    name: "@fryrsquared",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/9q5IZCTDsJLxY_Ppgr-sW7UmRBz91D8Ym_UxPaIHvV2yPN9nFkV8kFo0fVCt-hef0U0TXMr8Og=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790939767505
+  },
+  {
+    id: "wl_1790939807414_g2he8",
+    handle: "@CGPGrey",
+    name: "@CGPGrey",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_nxrDGcxMGo8yKf2_Dw0eaGEWj39IAIdZQjAuz-_mBHjUI=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790939807415
+  },
+  {
+    id: "wl_1790939861778_tj6r6",
+    handle: "@AppliedScience",
+    name: "@AppliedScience",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/ytc/AIdro_n0HEYF8o6yxXaIs-UhPQIEEuHIP72m7TQYA5uSY3z0cQ=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790939861778
+  },
+  {
+    id: "wl_1790939892776_qbdme",
+    handle: "@SteveMould",
+    name: "@SteveMould",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/iX-akiHlJYuPDq4YVBO83cfjWW0aQefdewmI326XVhZkzxnS3MrqNVi49J33jLBw5LR_ZVyKFA=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790939892776
+  },
+  {
+    id: "wl_1790939919414_w2riz",
+    handle: "@DrBenMiles",
+    name: "@DrBenMiles",
+    channelId: "",
+    avatarUrl: "https://yt3.googleusercontent.com/EcaoLNkQpE-smU-jZVXPOmw6UnF_uOdsQIuXNvMaBHVpnxONnD0N2Aql6qzGoLauG3IqPMtlCpY=s900-c-k-c0x00ffffff-no-rj",
+    addedAt: 1790939919414
+  }
+];
+
 const DEFAULT_SETTINGS = {
   enabled: true,
   hideNonWhitelisted: true,
@@ -10,32 +149,7 @@ const DEFAULT_SETTINGS = {
   showPageButtons: false,
   parentPassword: "varna",
   bypassUntil: 0,
-  whitelist: [
-    {
-      id: "wl_sample_1",
-      handle: "@veritasium",
-      name: "Veritasium",
-      channelId: "UCHnyfMqiRRG1u-2MsSQLbXA",
-      avatarUrl: "https://yt3.googleusercontent.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s900-c-k-c0x00ffffff-no-rj",
-      addedAt: Date.now()
-    },
-    {
-      id: "wl_sample_2",
-      handle: "@3blue1brown",
-      name: "3Blue1Brown",
-      channelId: "UCYO_jab_esuFRV4b17AJtAw",
-      avatarUrl: "",
-      addedAt: Date.now()
-    },
-    {
-      id: "wl_sample_3",
-      handle: "@kurzgesagt",
-      name: "Kurzgesagt – In a Nutshell",
-      channelId: "UCsXVk37bltHxD1rDPwtNM8Q",
-      avatarUrl: "",
-      addedAt: Date.now()
-    }
-  ],
+  whitelist: DEFAULT_WHITELIST,
   stats: {
     hiddenCount: 0,
     blockedWatchCount: 0
@@ -134,6 +248,42 @@ async function replaceWhitelistAtomic(entries) {
   });
 }
 
+async function reorderWhitelistAtomic(fromIndex, toIndex) {
+  return enqueueWhitelistOp(async () => {
+    const { whitelist = [] } = await chrome.storage.local.get('whitelist');
+    const list = [...whitelist];
+    const from = Number(fromIndex);
+    const to = Number(toIndex);
+    if (!Number.isInteger(from) || !Number.isInteger(to)) {
+      return { whitelist: list };
+    }
+    if (from < 0 || to < 0 || from >= list.length || to >= list.length || from === to) {
+      return { whitelist: list };
+    }
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    await chrome.storage.local.set({ whitelist: list });
+    return { whitelist: list };
+  });
+}
+
+async function seedMissingDefaultChannels() {
+  return enqueueWhitelistOp(async () => {
+    const { whitelist = [] } = await chrome.storage.local.get('whitelist');
+    const list = [...whitelist];
+    let added = 0;
+    for (const raw of DEFAULT_WHITELIST) {
+      if (channelExists(list, raw)) continue;
+      list.push({ ...raw });
+      added++;
+    }
+    if (added > 0) {
+      await chrome.storage.local.set({ whitelist: list });
+    }
+    return { added, whitelist: list };
+  });
+}
+
 // Initialize settings on install or update — only fill missing keys
 chrome.runtime.onInstalled.addListener(async (details) => {
   const data = await chrome.storage.local.get(null);
@@ -154,6 +304,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     await chrome.storage.local.set(updates);
   }
 
+  await seedMissingDefaultChannels();
   updateBadge();
   syncMissingAvatars();
 });
@@ -268,6 +419,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       syncMissingAvatars();
       sendResponse(result);
     });
+    return true;
+  }
+  if (request.action === 'whitelistReorder') {
+    reorderWhitelistAtomic(request.fromIndex, request.toIndex).then(sendResponse);
     return true;
   }
   if (request.action === 'applyBackup') {

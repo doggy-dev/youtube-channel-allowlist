@@ -498,7 +498,7 @@ input:checked + .decoy-slider:before {
 }
 
 .admin-whitelist-area {
-  max-height: 130px;
+  max-height: 220px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -572,6 +572,36 @@ input:checked + .decoy-slider:before {
 .wl-handle {
   font-size: 10px;
   color: var(--text-muted);
+}
+
+.wl-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-order-item {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.btn-order-item:hover:not(:disabled) {
+  color: #ffffff;
+  background: #1e293b;
+}
+
+.btn-order-item:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .btn-delete-item {

@@ -220,6 +220,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       const initial = (item.name || item.handle || '?').replace(/^@/, '').charAt(0).toUpperCase();
       const dateStr = item.addedAt ? new Date(item.addedAt).toLocaleDateString() : 'Initial';
       const identifier = [item.handle, item.channelId].filter(Boolean).join(' · ') || '--';
+      const fullIndex = list.findIndex((ch) => ch.id === item.id);
+
+      const orderTd = document.createElement('td');
+      const orderWrap = document.createElement('div');
+      orderWrap.className = 'order-controls';
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'btn-order';
+      upBtn.title = 'Move up';
+      upBtn.textContent = '↑';
+      upBtn.disabled = fullIndex <= 0;
+      upBtn.addEventListener('click', () => moveChannel(fullIndex, fullIndex - 1));
+      const downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.className = 'btn-order';
+      downBtn.title = 'Move down';
+      downBtn.textContent = '↓';
+      downBtn.disabled = fullIndex < 0 || fullIndex >= list.length - 1;
+      downBtn.addEventListener('click', () => moveChannel(fullIndex, fullIndex + 1));
+      orderWrap.appendChild(upBtn);
+      orderWrap.appendChild(downBtn);
+      orderTd.appendChild(orderWrap);
+      tr.appendChild(orderTd);
 
       const cell = document.createElement('td');
       const channelCell = document.createElement('div');
@@ -473,6 +496,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     return { handle, channelId, name };
+  }
+
+  async function moveChannel(fromIndex, toIndex) {
+    const result = await chrome.runtime.sendMessage({
+      action: 'whitelistReorder',
+      fromIndex,
+      toIndex
+    });
+    if (result?.whitelist) {
+      settings.whitelist = result.whitelist;
+    }
+    renderTable(optSearchInput.value);
   }
 
   async function addChannels(entries) {
