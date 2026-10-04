@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Smart Popup Blocker Pro",
-  "version": "2.7.3",
+  "version": "2.7.4",
   "description": "Blocks intrusive popups, overlay dialogs, and unwanted background redirects.",
   "permissions": [
     "storage",

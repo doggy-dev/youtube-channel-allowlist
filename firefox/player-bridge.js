@@ -102,19 +102,26 @@
     } catch (e) {}
   }
 
+  function mergeMeta(base, extra) {
+    if (!extra) return base;
+    if (!base) return { ...extra };
+    return {
+      channelId: base.channelId || extra.channelId || null,
+      handle: base.handle || extra.handle || null,
+      name: base.name || extra.name || null,
+      videoId: base.videoId || extra.videoId || null,
+      source: [base.source, extra.source].filter(Boolean).join('+')
+    };
+  }
+
   function extractAndPublish() {
-    const fromPr = extractFromPlayerResponse(window.ytInitialPlayerResponse);
-    if (fromPr && (fromPr.channelId || fromPr.handle)) {
-      publish(fromPr);
-      return;
+    const merged = mergeMeta(
+      mergeMeta(extractFromPlayerResponse(window.ytInitialPlayerResponse), extractFromYtInitialData()),
+      extractFromPlayerApi()
+    );
+    if (merged && (merged.channelId || merged.handle || merged.name)) {
+      publish(merged);
     }
-    const fromData = extractFromYtInitialData();
-    if (fromData && (fromData.channelId || fromData.handle)) {
-      publish(fromData);
-      return;
-    }
-    const fromApi = extractFromPlayerApi();
-    if (fromApi) publish(fromApi);
   }
 
   // Capture assignment of ytInitialPlayerResponse as YouTube boots / navigates

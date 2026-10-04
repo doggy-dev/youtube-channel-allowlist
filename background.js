@@ -341,21 +341,77 @@ async function resolveChannelAvatar(handleOrPath) {
   return null;
 }
 
+function extractChannelIdFromHtml(html) {
+  if (!html) return '';
+  const patterns = [
+    /itemprop="channelId"\s+content="(UC[a-zA-Z0-9_-]{20,})"/,
+    /"externalId"\s*:\s*"(UC[a-zA-Z0-9_-]{20,})"/,
+    /"channelId"\s*:\s*"(UC[a-zA-Z0-9_-]{20,})"/,
+    /"browseId"\s*:\s*"(UC[a-zA-Z0-9_-]{20,})"/
+  ];
+  for (const re of patterns) {
+    const m = html.match(re);
+    if (m && m[1]) return m[1];
+  }
+  return '';
+}
+
+async function fetchChannelHtml(handleOrPath) {
+  let path = String(handleOrPath || '').trim();
+  if (!path) return '';
+  if (path.startsWith('http')) {
+    try {
+      path = new URL(path).pathname.replace(/^\//, '');
+    } catch (e) {
+      return '';
+    }
+  }
+  if (path.startsWith('UC') && !path.includes('/')) {
+    path = `channel/${path}`;
+  } else if (!path.startsWith('@') && !path.startsWith('channel/')) {
+    path = `@${path.replace(/^@/, '')}`;
+  }
+  const resp = await fetch(`https://www.youtube.com/${path}`, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+  });
+  if (!resp.ok) return '';
+  return await resp.text();
+}
+
 async function syncMissingAvatars() {
   return enqueueWhitelistOp(async () => {
     const { whitelist = [] } = await chrome.storage.local.get('whitelist');
     let changed = false;
 
     for (const item of whitelist) {
-      if (!item.avatarUrl && (item.handle || item.channelId)) {
-        const lookup = item.handle
-          ? item.handle
-          : `channel/${item.channelId}`;
-        const url = await resolveChannelAvatar(lookup);
-        if (url) {
-          item.avatarUrl = url;
-          changed = true;
+      const needsAvatar = !item.avatarUrl && (item.handle || item.channelId);
+      const needsId = !item.channelId && item.handle;
+      if (!needsAvatar && !needsId) continue;
+
+      const lookup = item.handle ? item.handle : `channel/${item.channelId}`;
+      try {
+        const html = await fetchChannelHtml(lookup);
+        if (!html) continue;
+        if (needsAvatar) {
+          const url =
+            (html.match(/property="og:image"\s+content="([^"]+)"/) || [])[1] ||
+            (html.match(/itemprop="image"\s+content="([^"]+)"/) || [])[1] ||
+            (html.match(/"avatar":\{"thumbnails":\[\{"url":"([^"]+)"/) || [])[1] ||
+            '';
+          if (url) {
+            item.avatarUrl = url;
+            changed = true;
+          }
         }
+        if (needsId) {
+          const cid = extractChannelIdFromHtml(html);
+          if (cid) {
+            item.channelId = cid;
+            changed = true;
+          }
+        }
+      } catch (e) {
+        console.warn('[Channel meta fetch]', lookup, e);
       }
     }
 
@@ -363,6 +419,39 @@ async function syncMissingAvatars() {
       await chrome.storage.local.set({ whitelist });
     }
     return { changed };
+  });
+}
+
+async function learnWhitelistIdentity(info) {
+  return enqueueWhitelistOp(async () => {
+    const handle = normHandle(info && info.handle);
+    const channelId = String((info && info.channelId) || '').trim();
+    if (!handle && !channelId) return { whitelist: null, changed: false };
+
+    const { whitelist = [] } = await chrome.storage.local.get('whitelist');
+    let changed = false;
+    const list = whitelist.map((item) => {
+      const ih = normHandle(item.handle);
+      const iid = (item.channelId || '').trim();
+      const same =
+        (handle && ih && handle === ih) ||
+        (channelId && iid && channelId === iid);
+      if (!same) return item;
+      const next = { ...item };
+      if (channelId && !iid) {
+        next.channelId = channelId;
+        changed = true;
+      }
+      if (info.handle && !next.handle) {
+        next.handle = info.handle.startsWith('@') ? info.handle : '@' + handle;
+        changed = true;
+      }
+      return next;
+    });
+    if (changed) {
+      await chrome.storage.local.set({ whitelist: list });
+    }
+    return { whitelist: changed ? list : whitelist, changed };
   });
 }
 
@@ -423,6 +512,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request.action === 'whitelistReorder') {
     reorderWhitelistAtomic(request.fromIndex, request.toIndex).then(sendResponse);
+    return true;
+  }
+  if (request.action === 'whitelistLearnIdentity') {
+    learnWhitelistIdentity(request).then(sendResponse);
     return true;
   }
   if (request.action === 'applyBackup') {

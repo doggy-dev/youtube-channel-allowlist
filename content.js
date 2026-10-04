@@ -593,6 +593,30 @@
     });
   }
 
+  function whitelistHasHandleOnlyEntries() {
+    return (settings.whitelist || []).some((item) => {
+      const handle = (item.handle || item.vanity || item.customUrl || '').trim();
+      const id = (item.channelId || '').trim();
+      return !!handle && !id;
+    });
+  }
+
+  function rememberAllowedIdentity(channelInfo) {
+    if (!channelInfo || (!channelInfo.handle && !channelInfo.channelId)) return;
+    try {
+      chrome.runtime.sendMessage({
+        action: 'whitelistLearnIdentity',
+        handle: channelInfo.handle || '',
+        channelId: channelInfo.channelId || '',
+        name: channelInfo.name || ''
+      }).then((result) => {
+        if (result?.changed && result.whitelist) {
+          settings.whitelist = result.whitelist;
+        }
+      }).catch(() => {});
+    } catch (e) {}
+  }
+
   // Extract Channel Details from Video Cards / owner blocks
   function extractChannelFromElement(el) {
     if (!el) return null;
@@ -890,8 +914,7 @@
       const metaFresh =
         !currentVid ||
         !lastPlayerMeta.videoId ||
-        lastPlayerMeta.videoId === currentVid ||
-        Date.now() - (lastPlayerMeta.at || 0) < 15000;
+        lastPlayerMeta.videoId === currentVid;
       if (metaFresh && (lastPlayerMeta.channelId || lastPlayerMeta.handle)) {
         channelInfo = {
           handle: lastPlayerMeta.handle || null,
@@ -955,6 +978,7 @@
       const currentVid = 'channel:' + (window.location.pathname || '');
 
       if (channelInfo && (channelInfo.handle || channelInfo.channelId) && isChannelWhitelisted(channelInfo)) {
+        rememberAllowedIdentity(channelInfo);
         releaseMediaHold(null);
         removeWatchOverlay();
         return;
@@ -989,10 +1013,28 @@
 
     if (channelInfo && (channelInfo.handle || channelInfo.channelId)) {
       if (isChannelWhitelisted(channelInfo)) {
+        rememberAllowedIdentity(channelInfo);
         releaseMediaHold(currentVid);
         removeWatchOverlay();
         return;
       }
+
+      // SPA clicks often give channelId + display name ("Hannah Fry") before /@handle
+      // exists in the DOM. Handle-only allowlist entries would false-deny here.
+      const hasHandle = !!(channelInfo.handle || channelInfo.vanity);
+      if (!hasHandle && whitelistHasHandleOnlyEntries()) {
+        engageMediaHold('pending', currentVid, { killSrc: false });
+        requestPlayerMeta();
+        if (pendingWatchCheckTimer) clearTimeout(pendingWatchCheckTimer);
+        pendingWatchCheckTimer = setTimeout(() => {
+          pendingWatchCheckTimer = null;
+          if (isWatchLikePage() && !isBypassed()) {
+            checkWatchPage();
+          }
+        }, 400);
+        return;
+      }
+
       engageMediaHold('locked', currentVid, { killSrc: false });
       enforceWatchBlock(channelInfo, currentVid);
       return;
