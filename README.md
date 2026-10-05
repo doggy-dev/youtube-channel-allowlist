@@ -95,6 +95,7 @@ Open the extension **Options** page (after unlocking with the parent password):
 
 ## Notes
 
+- **Firefox:** a separate Manifest V3 build lives in [`firefox/`](firefox/) (Firefox 128+). Load via `about:debugging` → **Load Temporary Add-on…** → select `firefox/manifest.json`.
 - Adult bypass expiry is enforced by the YouTube page and a background alarm — it no longer depends on the popup staying open.
 - Extension-level filtering is not tamper-proof if the child can disable extensions; use browser managed policies for stronger locks.
 - Change the default password (`varna`) after install.
