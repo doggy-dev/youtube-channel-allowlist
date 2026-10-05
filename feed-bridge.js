@@ -87,6 +87,7 @@
       node.gridVideoRenderer ||
       node.compactVideoRenderer ||
       node.reelItemRenderer ||
+      node.shortsLockupViewModel ||
       node.playlistVideoRenderer ||
       node.lockupViewModel ||
       null;
@@ -96,37 +97,32 @@
       return extractVideoMeta(node.richItemRenderer.content);
     }
 
-    // lockupViewModel (newer YT) — best-effort
-    if (node.lockupViewModel || (r && r.id)) {
-      const lockup = node.lockupViewModel || r;
+    // Newer lockups can represent videos, playlists, mixes, or channels.
+    if (node.lockupViewModel) {
+      const lockup = node.lockupViewModel;
       try {
         const meta = lockup.metadata || lockup.contentMetadata || {};
-        // Very shape-unstable; try common paths
-        const channelId =
-          lockup.channelId ||
-          (meta && meta.channelId) ||
-          '';
-        let handle = '';
-        const url =
-          (lockup.rendererContext &&
-            lockup.rendererContext.commandContext &&
-            lockup.rendererContext.commandContext.onTap &&
-            lockup.rendererContext.commandContext.onTap.innertubeCommand &&
-            lockup.rendererContext.commandContext.onTap.innertubeCommand.commandMetadata &&
-            lockup.rendererContext.commandContext.onTap.innertubeCommand.commandMetadata.webCommandMetadata &&
-            lockup.rendererContext.commandContext.onTap.innertubeCommand.commandMetadata.webCommandMetadata.url) ||
-          '';
-        if (url && url.includes('/shorts/')) {
+        const channelId = lockup.channelId || meta.channelId || '';
+        const command =
+          lockup.rendererContext?.commandContext?.onTap?.innertubeCommand ||
+          lockup.onTap?.innertubeCommand ||
+          {};
+        const endpoint = command.watchEndpoint || {};
+        const url = command.commandMetadata?.webCommandMetadata?.url || '';
+        if (url.includes('/shorts/')) {
           return { videoId: 'shorts', title: '', channelId: '', handle: '', isShorts: true };
         }
-        handle = handleFromUrl(url);
-        // If we can't parse lockup well, return a stub only when we have something
-        if (channelId || handle) {
+
+        const contentType = String(lockup.contentType || '').toUpperCase();
+        const isVideo = contentType === 'LOCKUP_CONTENT_TYPE_VIDEO' || !!endpoint.videoId;
+        const videoId = endpoint.videoId || lockup.videoId ||
+          (contentType === 'LOCKUP_CONTENT_TYPE_VIDEO' ? lockup.contentId : '');
+        if (isVideo && videoId) {
           return {
-            videoId: lockup.contentId || lockup.videoId || 'lockup',
+            videoId,
             title: '',
             channelId,
-            handle,
+            handle: handleFromUrl(url),
             isShorts: false
           };
         }
@@ -135,12 +131,14 @@
 
     if (!r) return null;
 
-    const videoId = r.videoId || r.navigationEndpoint?.watchEndpoint?.videoId || null;
-    const reelId = r.videoId || r.navigationEndpoint?.reelWatchEndpoint?.videoId;
+    const endpoint = r.navigationEndpoint || r.onTap?.innertubeCommand;
+    const videoId = r.videoId || endpoint?.watchEndpoint?.videoId || null;
+    const reelId = r.videoId || endpoint?.reelWatchEndpoint?.videoId;
     const isShorts = !!(
       node.reelItemRenderer ||
-      r.navigationEndpoint?.reelWatchEndpoint ||
-      (r.navigationEndpoint?.commandMetadata?.webCommandMetadata?.url || '').includes('/shorts/')
+      node.shortsLockupViewModel ||
+      endpoint?.reelWatchEndpoint ||
+      (endpoint?.commandMetadata?.webCommandMetadata?.url || '').includes('/shorts/')
     );
 
     if (!videoId && !reelId && !isShorts) return null;
@@ -191,16 +189,36 @@
     return isAllowedChannel(page.channelId, page.handle);
   }
 
+  const SPONSORED_RENDERERS = [
+    'adSlotRenderer',
+    'inFeedAdLayoutRenderer',
+    'promotedVideoRenderer',
+    'promotedSparklesWebRenderer',
+    'promotedSparklesTextSearchRenderer',
+    'displayAdRenderer',
+    'searchPyvRenderer'
+  ];
+
+  function isSponsoredItem(node) {
+    if (!node || typeof node !== 'object') return false;
+    if (SPONSORED_RENDERERS.some((key) => node[key])) return true;
+    return !!(node.richItemRenderer && isSponsoredItem(node.richItemRenderer.content));
+  }
+
   function shouldKeepItem(node) {
     if (bypassed || !enabled) return true;
+    if (isSponsoredItem(node)) return false;
 
     const meta = extractVideoMeta(node);
     if (!meta) {
-      // Not a recognized video renderer — keep (shelves, headers, continuations, etc.)
+      // Search-card pruning is handled reversibly in the DOM layer.
       return true;
     }
 
     if (hideShorts && meta.isShorts) return false;
+
+    // Search cards are filtered reversibly after YouTube renders them.
+    if (location.pathname === '/results') return true;
 
     if (meta.channelId || meta.handle) {
       return isAllowedChannel(meta.channelId, meta.handle);
@@ -220,8 +238,16 @@
     for (const item of arr) {
       if (shouldKeepItem(item)) {
         // Also filter nested contents if present
+        const grid = item && item.gridShelfViewModel;
+        const hadBlockedItems = Array.isArray(grid?.contents) && grid.contents.some((entry) =>
+          isSponsoredItem(entry) || (hideShorts && extractVideoMeta(entry)?.isShorts)
+        );
         filterTree(item);
-        out.push(item);
+        if (hadBlockedItems && grid.contents.length === 0) {
+          dropped++;
+        } else {
+          out.push(item);
+        }
       } else {
         dropped++;
       }
@@ -259,6 +285,7 @@
       'shelfRenderer',
       'horizontalListRenderer',
       'gridRenderer',
+      'gridShelfViewModel',
       'playlistVideoListRenderer',
       'twoColumnSearchResultsRenderer',
       'twoColumnBrowseResultsRenderer',
