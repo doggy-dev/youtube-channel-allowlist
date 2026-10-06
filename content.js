@@ -40,6 +40,10 @@
     return path.startsWith('/watch') || path.startsWith('/embed/') || path.startsWith('/live/');
   }
 
+  function isSearchResultsPage() {
+    return window.location.pathname === '/results';
+  }
+
   // Top-level YouTube paths that are NOT custom channel vanity URLs
   const RESERVED_YT_ROOTS = new Set([
     'watch', 'shorts', 'feed', 'results', 'playlist', 'playlists', 'channel', 'c', 'user',
@@ -133,7 +137,10 @@
 
   function applySettingsClasses() {
     const root = document.documentElement;
+    root.classList.toggle('yt-wl-search-page', isSearchResultsPage());
     root.classList.toggle('yt-wl-hide-shorts', !!(settings.enabled && settings.hideShorts && !isBypassed()));
+    root.classList.toggle('yt-wl-hide-sponsored', !!(settings.enabled && !isBypassed()));
+    root.classList.toggle('yt-wl-hide-search-results', !!(settings.enabled && settings.hideNonWhitelisted && !isBypassed()));
     root.classList.toggle('yt-wl-block-preview', !!(settings.enabled && settings.blockHoverPreview && !isBypassed()));
   }
 
@@ -315,6 +322,13 @@
     document.querySelectorAll('.yt-wl-empty-shelf').forEach((el) => {
       el.classList.remove('yt-wl-empty-shelf');
     });
+    document.querySelectorAll('[data-yt-wl-search-blocked="true"], .yt-wl-search-unresolved').forEach((el) => {
+      el.removeAttribute('data-yt-wl-search-blocked');
+      el.removeAttribute('data-yt-wl-status');
+      el.classList.remove('yt-wl-blocked');
+      el.classList.remove('yt-wl-search-unresolved');
+    });
+    document.documentElement.classList.remove('yt-wl-hide-search-results');
   }
 
   // ================= MAIN-WORLD BRIDGES (registered via manifest world: MAIN) =================
@@ -634,26 +648,185 @@
     return { handle, channelId, name };
   }
 
+  const SHORTS_SELECTORS = [
+    'ytd-reel-item-renderer',
+    'ytm-shorts-lockup-view-model',
+    'ytm-shorts-lockup-view-model-v2',
+    '[is-shorts]'
+  ].join(', ');
+
+  function isShortsCard(card) {
+    return card.matches(SHORTS_SELECTORS) || !!card.querySelector(SHORTS_SELECTORS + ', a[href*="/shorts/"]');
+  }
+
+  const SPONSORED_SELECTORS = [
+    'ytd-ad-slot-renderer',
+    'ytd-in-feed-ad-layout-renderer',
+    'ytd-promoted-video-renderer',
+    'ytd-promoted-sparkles-web-renderer',
+    'ytd-promoted-sparkles-text-search-renderer',
+    'ytd-display-ad-renderer',
+    'ytd-search-pyv-renderer'
+  ].join(', ');
+
+  function isSponsoredCard(card) {
+    return card.matches(SPONSORED_SELECTORS) || !!card.querySelector(SPONSORED_SELECTORS);
+  }
+
+  const SEARCH_CARD_SELECTORS = [
+    'ytd-video-renderer',
+    'ytd-grid-video-renderer',
+    'ytd-channel-renderer',
+    'ytd-grid-channel-renderer',
+    'ytd-playlist-renderer',
+    'ytd-grid-playlist-renderer',
+    'ytd-radio-renderer',
+    'yt-lockup-view-model',
+    'ytd-rich-item-renderer',
+    'ytd-compact-video-renderer',
+    'ytd-reel-item-renderer',
+    'ytd-ad-slot-renderer',
+    'ytd-in-feed-ad-layout-renderer',
+    'ytd-promoted-video-renderer',
+    'ytd-promoted-sparkles-web-renderer',
+    'ytd-promoted-sparkles-text-search-renderer',
+    'ytd-display-ad-renderer',
+    'ytd-search-pyv-renderer'
+  ].join(', ');
+
+  function isSearchVideoCard(card) {
+    if (!card || !card.matches) return false;
+    if (isShortsCard(card)) return !settings.hideShorts;
+    if (card.matches('ytd-rich-item-renderer')) {
+      const video = card.querySelector('ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer, yt-lockup-view-model');
+      return !!video && isSearchVideoCard(video);
+    }
+    if (card.matches('yt-lockup-view-model')) {
+      const contentType = card.getAttribute('content-type') || card.getAttribute('data-content-type') || '';
+      const videoLink = card.querySelector('a[href^="/watch?v="]');
+      const playlistLink = card.querySelector('a[href^="/playlist"], a[href*="list="]');
+      if (playlistLink || /playlist|radio|mix|channel/i.test(contentType)) return false;
+      return (!!videoLink && !playlistLink) || /video/i.test(contentType);
+    }
+    return card.matches('ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer');
+  }
+
+  function isSearchContinuation(card) {
+    return !!(card && card.matches && card.matches(
+      'ytd-continuation-item-renderer, continuation-item-renderer, .continuation-item, [data-continuation-item]'
+    ));
+  }
+
+  function isSearchStructure(card) {
+    return !!(card && card.matches && (
+      isSearchContinuation(card) ||
+      card.matches('h1, h2, h3, button, input, select, textarea, ytd-section-header-renderer, ytd-message-renderer, ytd-search-feedback-renderer, yt-did-you-mean-renderer')
+    ));
+  }
+
+  function markSearchCard(card, blocked) {
+    if (!card) return;
+    card.toggleAttribute('data-yt-wl-search-blocked', blocked);
+    card.classList.toggle('yt-wl-blocked', blocked);
+    if (blocked) {
+      card.setAttribute('data-yt-wl-status', 'blocked');
+    } else if (card.getAttribute('data-yt-wl-status') === 'blocked') {
+      card.removeAttribute('data-yt-wl-status');
+    }
+  }
+
+  function filterSearchResultCards() {
+    const active = settings.enabled && settings.hideNonWhitelisted && !isBypassed();
+    document.documentElement.classList.toggle('yt-wl-search-page', isSearchResultsPage());
+    document.documentElement.classList.toggle('yt-wl-hide-search-results', isSearchResultsPage() && active);
+
+    if (!isSearchResultsPage()) {
+      document.querySelectorAll('[data-yt-wl-search-blocked="true"], .yt-wl-search-unresolved').forEach((card) => {
+        card.removeAttribute('data-yt-wl-search-blocked');
+        card.removeAttribute('data-yt-wl-status');
+        card.classList.remove('yt-wl-blocked');
+        card.classList.remove('yt-wl-search-unresolved');
+      });
+      return;
+    }
+
+    const containers = document.querySelectorAll('ytd-item-section-renderer #contents');
+    containers.forEach((container) => {
+      Array.from(container.children).forEach((card) => {
+        if (isSearchStructure(card)) return;
+
+        const candidates = new Set();
+        if (card.matches(SEARCH_CARD_SELECTORS)) candidates.add(card);
+        card.querySelectorAll(SEARCH_CARD_SELECTORS).forEach((candidate) => candidates.add(candidate));
+        const cards = candidates.size ? Array.from(candidates) : [card];
+
+        if (!active) {
+          cards.forEach((candidate) => {
+            if (candidate.hasAttribute('data-yt-wl-search-blocked')) {
+              candidate.removeAttribute('data-yt-wl-search-blocked');
+              candidate.removeAttribute('data-yt-wl-status');
+              candidate.classList.remove('yt-wl-blocked');
+              candidate.classList.remove('yt-wl-search-unresolved');
+            }
+          });
+          return;
+        }
+
+        const videos = cards.filter(isSearchVideoCard);
+        if (!videos.length) {
+          markSearchCard(card, true);
+          return;
+        }
+
+        videos.forEach((video) => {
+          const channelInfo = extractChannelFromElement(video);
+          const allowed = !!(channelInfo && (channelInfo.handle || channelInfo.channelId) && isChannelWhitelisted(channelInfo));
+          markSearchCard(video, !allowed);
+          video.classList.toggle('yt-wl-search-unresolved', !allowed);
+          video.setAttribute('data-yt-wl-status', allowed ? 'allowed' : 'blocked');
+        });
+
+        if (card !== videos[0]) {
+          markSearchCard(card, videos.every((video) => video.classList.contains('yt-wl-blocked')));
+        }
+      });
+    });
+  }
+
   const VIDEO_SELECTORS = [
     'ytd-rich-item-renderer',
+    'ytd-channel-renderer',
+    'ytd-grid-channel-renderer',
+    'ytd-playlist-renderer',
+    'ytd-grid-playlist-renderer',
     'ytd-video-renderer',
     'ytd-compact-video-renderer',
     'ytd-grid-video-renderer',
     'ytd-reel-item-renderer',
+    'ytm-shorts-lockup-view-model',
+    'ytm-shorts-lockup-view-model-v2',
+    '.ytGridShelfViewModelGridShelfItem',
     'ytd-playlist-video-renderer',
     'yt-lockup-view-model',
     'ytd-radio-renderer',
-    'ytd-notification-renderer'
+    'ytd-notification-renderer',
+    SPONSORED_SELECTORS
   ].join(', ');
 
   function processVideoCard(card) {
-    if (isBypassed()) {
+    if (isBypassed() || !settings.enabled) {
       card.classList.remove('yt-wl-blocked');
       card.removeAttribute('data-yt-wl-status');
+      card.removeAttribute('data-yt-wl-search-blocked');
       return;
     }
 
-    if (settings.hideShorts && card.querySelector('a[href*="/shorts/"]')) {
+    if (isSearchResultsPage() && settings.enabled && settings.hideNonWhitelisted) {
+      filterSearchResultCards();
+      return;
+    }
+
+    if ((settings.enabled && isSponsoredCard(card)) || (settings.hideShorts && isShortsCard(card))) {
       card.setAttribute('data-yt-wl-status', 'blocked');
       card.classList.add('yt-wl-blocked');
       return;
@@ -713,15 +886,28 @@
   }
 
   function checkEmptyShelves() {
-    if (isBypassed()) {
+    if (!settings.enabled || isBypassed()) {
       document.querySelectorAll('.yt-wl-empty-shelf').forEach((s) => s.classList.remove('yt-wl-empty-shelf'));
       return;
     }
 
     const shelves = document.querySelectorAll(
-      'ytd-rich-section-renderer, ytd-rich-shelf-renderer, ytd-reel-shelf-renderer'
+      'ytd-rich-section-renderer, ytd-rich-shelf-renderer, ytd-reel-shelf-renderer, grid-shelf-view-model'
     );
     shelves.forEach((shelf) => {
+      if (shelf.matches('grid-shelf-view-model')) {
+        const items = Array.from(shelf.querySelectorAll(VIDEO_SELECTORS));
+        const hasBlockedItems = items.some((item) =>
+          (settings.hideShorts && isShortsCard(item)) || (settings.enabled && isSponsoredCard(item))
+        );
+        const hasVisibleItems = items.some((item) =>
+          !(settings.hideShorts && isShortsCard(item)) &&
+          !(settings.enabled && isSponsoredCard(item)) && !item.closest('.yt-wl-blocked')
+        );
+        shelf.classList.toggle('yt-wl-empty-shelf', !!(hasBlockedItems && !hasVisibleItems));
+        return;
+      }
+
       if (
         settings.hideShorts &&
         (
@@ -746,12 +932,15 @@
   }
 
   function filterAllVideos() {
-    if (isBypassed()) {
+    if (!settings.enabled || isBypassed()) {
       unblockAllVideos();
+      filterSearchResultCards();
       return;
     }
+    filterSearchResultCards();
     const cards = document.querySelectorAll(VIDEO_SELECTORS);
     cards.forEach(processVideoCard);
+    filterSearchResultCards();
     checkEmptyShelves();
   }
 

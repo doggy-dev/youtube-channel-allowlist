@@ -39,6 +39,9 @@ html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-reel-shelf-renderer,
 html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
 html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
 html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-reel-item-renderer,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytm-shorts-lockup-view-model,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytm-shorts-lockup-view-model-v2,
+html.yt-wl-hide-shorts:not(.yt-wl-bypassed) .ytGridShelfViewModelGridShelfItem:has(ytm-shorts-lockup-view-model, ytm-shorts-lockup-view-model-v2, a[href*="/shorts/"]),
 html.yt-wl-hide-shorts:not(.yt-wl-bypassed) yt-lockup-view-model:has(a[href*="/shorts/"]),
 html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-rich-item-renderer:has(a[href*="/shorts/"]),
 html.yt-wl-hide-shorts:not(.yt-wl-bypassed) ytd-video-renderer:has(a[href*="/shorts/"]),
@@ -51,6 +54,27 @@ html.yt-wl-hide-shorts:not(.yt-wl-bypassed) [is-shorts] {
   pointer-events: none !important;
   height: 0 !important;
   overflow: hidden !important;
+}
+
+/* Strict whitelist filtering applies only to result cards on YouTube search pages. */
+html.yt-wl-search-page.yt-wl-hide-search-results:not(.yt-wl-bypassed) ytd-search ytd-item-section-renderer ytd-channel-renderer,
+html.yt-wl-search-page.yt-wl-hide-search-results:not(.yt-wl-bypassed) ytd-search ytd-item-section-renderer ytd-grid-channel-renderer,
+html.yt-wl-search-page.yt-wl-hide-search-results:not(.yt-wl-bypassed) ytd-search ytd-item-section-renderer ytd-playlist-renderer,
+html.yt-wl-search-page.yt-wl-hide-search-results:not(.yt-wl-bypassed) ytd-search ytd-item-section-renderer ytd-grid-playlist-renderer,
+html.yt-wl-search-page.yt-wl-hide-search-results:not(.yt-wl-bypassed) ytd-search ytd-item-section-renderer ytd-radio-renderer,
+html.yt-wl-search-page.yt-wl-hide-search-results:not(.yt-wl-bypassed) ytd-search ytd-item-section-renderer [data-yt-wl-search-blocked] {
+  display: none !important;
+}
+
+/* Sponsored feed/search cards (gated by active protection) */
+html.yt-wl-hide-sponsored:not(.yt-wl-bypassed) ytd-ad-slot-renderer,
+html.yt-wl-hide-sponsored:not(.yt-wl-bypassed) ytd-in-feed-ad-layout-renderer,
+html.yt-wl-hide-sponsored:not(.yt-wl-bypassed) ytd-promoted-video-renderer,
+html.yt-wl-hide-sponsored:not(.yt-wl-bypassed) ytd-promoted-sparkles-web-renderer,
+html.yt-wl-hide-sponsored:not(.yt-wl-bypassed) ytd-promoted-sparkles-text-search-renderer,
+html.yt-wl-hide-sponsored:not(.yt-wl-bypassed) ytd-display-ad-renderer,
+html.yt-wl-hide-sponsored:not(.yt-wl-bypassed) ytd-search-pyv-renderer {
+  display: none !important;
 }
 
 /* 4. Watch Page Blocker Overlay - Camouflaged as Security/Content Policy */
@@ -217,12 +241,12 @@ html.yt-wl-channel-blocked video {
 }
 
 /* ================= 5. HIDE TOPIC RIBBON UNDER SEARCH BAR ================= */
-html:not(.yt-wl-bypassed) ytd-feed-filter-chip-bar-renderer,
-html:not(.yt-wl-bypassed) yt-chip-cloud-renderer,
-html:not(.yt-wl-bypassed) #chips-wrapper,
-html:not(.yt-wl-bypassed) iron-selector#chips,
-html:not(.yt-wl-bypassed) ytd-rich-grid-renderer #header,
-html:not(.yt-wl-bypassed) #chips.ytd-feed-filter-chip-bar-renderer {
+html:not(.yt-wl-bypassed):not(.yt-wl-search-page) ytd-feed-filter-chip-bar-renderer,
+html:not(.yt-wl-bypassed):not(.yt-wl-search-page) yt-chip-cloud-renderer,
+html:not(.yt-wl-bypassed):not(.yt-wl-search-page) #chips-wrapper,
+html:not(.yt-wl-bypassed):not(.yt-wl-search-page) iron-selector#chips,
+html:not(.yt-wl-bypassed):not(.yt-wl-search-page) ytd-rich-grid-renderer #header,
+html:not(.yt-wl-bypassed):not(.yt-wl-search-page) #chips.ytd-feed-filter-chip-bar-renderer {
   display: none !important;
   visibility: hidden !important;
   height: 0 !important;
